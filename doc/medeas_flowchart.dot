@@ -1,0 +1,36 @@
+# dot -Tps -o flowchart.ps
+
+digraph G {
+  bammds [shape=box];
+  bammds_parallel [shape=box];
+  buffer [shape=box];
+  bammds_merge [shape=box];
+  bammds_allelesharing [shape=box];
+  bammds_allelesharingsum [shape=box];
+  bammds_fillout [shape=box];
+  "bammds_plot.r" [shape=box];
+  "cucumber.bam" [style=filled,color=".5 .3 1.0"];
+  "nightshade.tomato.bam" [style=filled,color=".5 .3 1.0"];
+  "[...].bam" [style=filled,color=".5 .3 1.0"];
+  "HGDP_HapMap3.tped" [style=filled,color=".5 .3 1.0"];
+  "HGDP_HapMap3.tfam" [style=filled,color=".5 .3 1.0"];
+  "tmp/cucumber,nightshade.tomato,HGDP_HapMap3.30.15.legend.csv";
+  "tmp/cucumber,nightshade.tomato,HGDP_HapMap3.30.15.legend.filled.csv";
+  "tmp/cucumber,nightshade.tomato,HGDP_HapMap3.30.15.pdf" [style=filled,color="1.0 1.0 1.0"];
+  
+  "HGDP_HapMap3.tped" -> bammds;
+  "HGDP_HapMap3.tfam" -> bammds;
+  "cucumber.bam" -> bammds;
+  "nightshade.tomato.bam" -> bammds;
+  "[...].bam" -> bammds;
+  bammds -> bammds_parallel;
+  bammds -> "tmp/cucumber,nightshade.tomato,HGDP_HapMap3.30.15.legend.csv";
+  bammds_parallel -> buffer -> bammds_merge -> bammds_allelesharing
+    -> bammds_allelesharingsum -> "tmp/cucumber,nightshade.tomato,HGDP_HapMap3.30.15.asd";
+  "tmp/cucumber,nightshade.tomato,HGDP_HapMap3.30.15.legend.csv" -> bammds_fillout;
+  bammds_fillout -> "tmp/cucumber,nightshade.tomato,HGDP_HapMap3.30.15.legend.filled.csv";
+  "tmp/cucumber,nightshade.tomato,HGDP_HapMap3.30.15.legend.filled.csv" -> "bammds_plot.r";
+  "tmp/cucumber,nightshade.tomato,HGDP_HapMap3.30.15.asd" -> "bammds_plot.r";
+  "bammds_plot.r" -> "tmp/cucumber,nightshade.tomato,HGDP_HapMap3.30.15.pdf";
+}
+
