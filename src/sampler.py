@@ -8,9 +8,11 @@ Created on Fri Apr 22 16:05:19 2016
 import numpy as np
 import matplotlib.pyplot as plt
 
-L = 100000
+L = 10000
 n = 100
 p = 0.05
+
+numtests = 30
 
 def find_eig(dst):
 
@@ -52,7 +54,7 @@ def make_pop(base, p, size):
         
     return result
 
-def process():
+def process(illustrate=False):
     base1 = sample(L)
     base2 = sample(L)
        
@@ -65,9 +67,10 @@ def process():
         for j in range(n):
             dists[i,j] = np.sum(np.abs(inds[i]-inds[j]))/L
             dists2[i,j] = np.sqrt(np.sum((inds[i]-inds[j])**2)/L)
-            
-    #plt.pcolor(dists)
-    #plt.colorbar()
+    
+    if illustrate:    
+        plt.pcolor(dists)
+        plt.colorbar()
     
     ls, x, Y, Z = find_eig(dists)
     ls, X, Y, Z = find_eig(dists2)
@@ -86,17 +89,42 @@ def process():
     V1 = np.std(arr1)
     V2 = np.std(arr2)
     
-    #xx = np.linspace(min(X), max(X), 300)
-    #yy1 = np.exp(-(xx-m1)**2/(2*v1**2))/(v1*np.sqrt(2*np.pi))
-    #yy2 = np.exp(-(xx-m2)**2/(2*v2**2))/(v2*np.sqrt(2*np.pi))
+    if illustrate:
+        xx = np.linspace(min(x)*1.3, max(x)*1.3, 2500)
+        yy1 = np.exp(-(xx-m1)**2/(2*v1**2))/(v1*np.sqrt(2*np.pi))
+        yy2 = np.exp(-(xx-m2)**2/(2*v2**2))/(v2*np.sqrt(2*np.pi))
+        
+        plt.figure()
+        plt.plot(x, [1]*n, 'bo')
+        plt.plot(xx, yy1+yy2, 'r-')
     
-    #plt.figure()
-    #plt.plot(X, [0.01]*n, 'bo')
-    #plt.plot(xx, yy1+yy2, 'r-')
+    s2 = np.std(dists2[:n//2,n//2:])
+    d2 = np.mean(dists2[:n//2,n//2:])
+    s = np.std(dists[:n//2,n//2:])
+    d = np.mean(dists[:n//2,n//2:])
+
     
-    return (m1 - m2)/v1, (M1 - M2)/V2
+    return v1/np.abs(m1 - m2), V1/np.abs(M1 - M2), s/d, s2/d2
 
-for pr in range(10):
-    print(process())
+rat_mat = []
+rat_mds = []
+for pr in range(numtests):
+    s_m, s_m2, s_d, s_d2 = process(pr==numtests-1)
+    print('---------------------------------------------------')
+    print('sigma/mean for matrix elements (sqrt)   :', s_d2)
+    print('sigma/mean for matrix elements (linear) :', s_d)
+    print('sigma/distance for mds plot (sqrt)      :', s_m2)
+    print('sigma/distance for mds plot (linear)    :', s_m)
+    print('ratio of first two                      :', s_d2/s_d)
+    print('ratio of last two                       :', s_m2/s_m)
+    rat_mat.append(s_d2/s_d)
+    rat_mds.append(s_m2/s_m)
 
-#plt.show()
+print('---------------------------------------------------')
+print('Grand mean for sqrt/linaer in mds       :', np.mean(rat_mds))
+print('Grand sigma for sqrt/linaer in mds      :', np.std(rat_mds))
+print('Grand mean for sqrt/linaer in matrix    :', np.mean(rat_mat))
+print('Grand sigma for sqrt/linaer in matrix   :', np.std(rat_mat))
+
+
+plt.show()
