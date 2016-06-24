@@ -15,8 +15,8 @@ name = 'test.what'
 def fun(a, b):
     return (a - b)**2
 
-lines = 300
-symbs = 300000
+lines = 900
+symbs = 600000
 
 with open(name) as f:
     data = np.fromstring(f.read(), sep=' ', dtype='int8').reshape((lines, symbs))

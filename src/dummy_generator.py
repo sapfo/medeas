@@ -8,8 +8,8 @@ Created on Fri Jun 24 14:52:13 2016
 import random
 
 name = 'test.what'
-lines = 300
-symbs = 300000
+lines = 900
+symbs = 600000
 
 with open(name, 'w') as f:
     for i in range(lines):
