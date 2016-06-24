@@ -1,0 +1,6 @@
+
+tee tmp/Wollstein.hg19.asd_tee | bammds_parallel -j70% --compress --round-robin --header 2 --block 500k --pipe 'cat | bammds_merge --debug   | bammds_allelesharing' | bammds_allelesharingsum >tmp/Wollstein.hg19.asd
+
+bammds_fillout tmp/Wollstein.hg19.legend.csv > tmp/Wollstein.hg19.legend.filled.csv
+
+bammds_plot.r tmp/Wollstein.hg19.asd tmp/Wollstein.hg19.legend.csv tmp/Wollstein.hg19.legend.filled.csv Wollstein.hg19.pdf 1 2 T F T
