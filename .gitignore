@@ -63,3 +63,6 @@ target/
 
 #logfiles
 *#log.txt*
+
+#Testing stuff
+test.what

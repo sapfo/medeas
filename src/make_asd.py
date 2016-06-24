@@ -12,25 +12,26 @@ start = time.time()
 
 name = 'test.what'
 
+def fun(a, b):
+    return (a - b)**2
+
 lines = 300
 symbs = 300000
 
-f = open(name, 'r')
+with open(name) as f:
+    data = np.fromstring(f.read(), sep=' ', dtype='int8').reshape((lines, symbs))
+
+finish = time.time()
+print(finish-start)
 
 delta = np.zeros((lines, lines))
+
 for i in range(lines):
-    f.seek(i*2*symbs)
-    a = np.fromstring(f.readline(), sep=' ', dtype='int8')
-    for j in range(i+1, lines):
-        f.seek(j*2*symbs)
-        b = np.fromstring(f.readline(), sep=' ', dtype='int8')
-        delta[i,j] = np.sqrt(np.sum((a-b)**2)/lines)
-
     print(i)
+    for j in range(i+1, lines):
+        delta[i,j] = np.sum(fun(data[i], data[j]))
 
-f.close()
 delta = delta + delta.T
 
 finish = time.time()
-
 print(finish-start)
