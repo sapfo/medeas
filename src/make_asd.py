@@ -10,26 +10,31 @@ import time
 
 start = time.time()
 
-name = 'test.what'
+N = 294
+sites = 24112
+cut = N*4 - 1
+name = '../test/bla.tped'
 
 def fun(a, b):
-    return (a - b)**2
-
-lines = 900
-symbs = 600000
+    dst = np.sign(a)**2 * np.sign(b)**2 * np.abs(a-b)
+    norm = np.sign(a)**2 * np.sign(b)**2
+    return np.sum(dst)/np.sum(norm)
 
 with open(name) as f:
-    data = np.fromstring(f.read(), sep=' ', dtype='int8').reshape((lines, symbs))
+    data = f.read().splitlines()
+
+data = np.array([np.fromstring(l[-cut:], sep=' ', dtype='int8') for l in data])
+data = data.T
 
 finish = time.time()
 print(finish-start)
 
-delta = np.zeros((lines, lines))
+delta = np.zeros((N, N))
 
-for i in range(lines):
+for i in range(N):
     print(i)
-    for j in range(i+1, lines):
-        delta[i,j] = np.sum(fun(data[i], data[j]))
+    for j in range(i+1, N):
+        delta[i,j] = fun(data[i], data[j])
 
 delta = delta + delta.T
 
