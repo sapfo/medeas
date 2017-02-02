@@ -16,25 +16,25 @@ cut = N*4 - 1
 name = '../test/bla.tped'
 
 def fun(a, b):
-    dst = np.sign(a)**2 * np.sign(b)**2 * np.abs(a-b)
-    norm = np.sign(a)**2 * np.sign(b)**2
-    return np.sum(dst)/np.sum(norm)
+    filt = np.logical_and(a, b)
+    dst = filt * np.abs(a-b)
+    norm = np.count_nonzero(filt)
+    return np.sum(dst)/norm
 
 with open(name) as f:
     data = f.read().splitlines()
 
 data = np.array([np.fromstring(l[-cut:], sep=' ', dtype='int8') for l in data])
-data = data.T
 
 finish = time.time()
 print(finish-start)
 
-delta = np.zeros((N, N))
+delta = np.zeros((2*N, 2*N))
 
-for i in range(N):
+for i in range(2*N):
     print(i)
-    for j in range(i+1, N):
-        delta[i,j] = fun(data[i], data[j])
+    for j in range(i+1, 2*N):
+        delta[i,j] = fun(data[:,i], data[:,j])
 
 delta = delta + delta.T
 
