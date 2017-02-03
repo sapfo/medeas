@@ -6,11 +6,18 @@ Created on Fri Jun 24 15:29:37 2016
 """
 
 import numpy as np
+from multiprocessing import Process, Queue, current_process, cpu_count
+from queue import Empty
+
+from time import time, sleep
+start = time()
 
 N = 294
 sites = 24112
 cut = N*4 - 1
 name = '../test/bla.tped'
+
+NPROC = cpu_count()
 
 def fun(a, b):
     filt = np.logical_and(a, b)
@@ -26,9 +33,43 @@ data = data[:,::2] + data[:,1::2]
 
 delta = np.zeros((N, N))
 
+tasks = Queue()
 for i in range(N):
-    print(i)
+    tasks.put(i)
+
+for _ in range(NPROC):
+    tasks.put(-1)
+
+results = Queue()
+
+def compute(i):
+    print(current_process().name + ': ' + str(i))
+    res = []
     for j in range(i+1, N):
-        delta[i,j] = fun(data[:,i], data[:,j])
+        res.append(fun(data[:,i], data[:,j]))
+    return res
+
+def work(t, r):
+    while True:
+        i = t.get()
+        if i < 0:
+            print(current_process().name + ' exiting on empty')
+            return
+        r.put([i, compute(i)])
+
+procs = [Process(target=work, args=(tasks, results)) for _ in range(NPROC)]
+
+for proc in procs:
+    proc.start()
+
+rest = N
+while rest:
+    i, res = results.get()
+    rest -= 1
+    delta[i, i+1:] = res
+
+for proc in procs:
+    proc.join()
 
 delta = delta + delta.T
+print(time()-start)
