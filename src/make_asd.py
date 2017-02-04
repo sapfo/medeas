@@ -18,10 +18,19 @@ cut = N*4 - 1
 name = '../test/bla.tped'
 
 NPROC = cpu_count()
+dist_func = np.abs
 
-def fun(a, b):
+def test_func(dst):
+    if dst > 1:
+        return dst**2
+    else:
+        return 0
+
+#dist_func = np.vectorize(test_func)
+
+def dist(a, b, dist_func):
     filt = np.logical_and(a, b)
-    dst = filt * np.abs(a-b)
+    dst = filt * dist_func(a-b)
     return np.sum(dst)/np.sum(filt)
 
 with open(name) as f:
@@ -46,7 +55,7 @@ def compute(i):
     print(current_process().name + ': ' + str(i))
     res = []
     for j in range(i+1, N):
-        res.append(fun(data[:,i], data[:,j]))
+        res.append(dist(data[:,i], data[:,j], dist_func))
     return res
 
 def work(t, r):
