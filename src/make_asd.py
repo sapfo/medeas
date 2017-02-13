@@ -6,19 +6,22 @@ Created on Fri Jun 24 15:29:37 2016
 """
 
 import numpy as np
-from multiprocessing import Process, Queue, current_process, cpu_count
-from queue import Empty
+from multiprocessing import Process, Queue, cpu_count
 
-from time import time, sleep
-start = time()
+# ---------- constants
 
 N = 294
 sites = 24112
-cut = N*4 - 1
+cut = N*4
 name = '../test/bla.tped'
 
 NPROC = cpu_count()
-dist_func = np.abs
+
+# this should be large to avoid overhead of spawning new processes
+# or we need to reuse them somehow
+MAXSIZE = 100*2**20 # 100 MB
+
+# ---------- distance functions
 
 def test_func(dst):
     if dst > 1:
@@ -26,59 +29,82 @@ def test_func(dst):
     else:
         return 0
 
-#dist_func = np.vectorize(test_func)
+dist_func = np.vectorize(test_func)
+dist_func = np.abs
+dist_func = np.square
 
-def dist(a, b, dist_func):
-    filt = np.logical_and(a, b)
-    dst = filt * dist_func(a-b)
-    return np.sum(dst)/np.sum(filt)
+# ---------- global data
 
-with open(name) as f:
-    data = f.read().splitlines()
-
-data = np.array([np.fromstring(l[-cut:], sep=' ', dtype='int8') for l in data])
-
-data = data[:,::2] + data[:,1::2]
-
-delta = np.zeros((N, N))
-
+tot_dists = np.zeros((N, N))
+tot_norms = np.zeros((N, N))
 tasks = Queue()
-for i in range(N):
-    tasks.put(i)
-
-for _ in range(NPROC):
-    tasks.put(-1)
-
 results = Queue()
 
+def dist_and_norm(a, b, dist_func):
+    filt = np.logical_and(a, b)
+    dst = filt * dist_func(a-b)
+    return np.sum(dst), np.sum(filt)
+
 def compute(i):
-    print(current_process().name + ': ' + str(i))
-    res = []
+    dists = []
+    norms = []
     for j in range(i+1, N):
-        res.append(dist(data[:,i], data[:,j], dist_func))
-    return res
+        dist, norm = dist_and_norm(data[i], data[j], dist_func)
+        dists.append(dist)
+        norms.append(norm)
+    return dists, norms
 
-def work(t, r):
+def work(tasks, results):
     while True:
-        i = t.get()
+        i = tasks.get()
         if i < 0:
-            print(current_process().name + ' exiting on empty')
             return
-        r.put([i, compute(i)])
+        results.put((i, compute(i)))
 
-procs = [Process(target=work, args=(tasks, results)) for _ in range(NPROC)]
+def process():
+    dists = np.zeros((N, N))
+    norms = np.zeros((N, N))
 
-for proc in procs:
-    proc.start()
+    for i in range(N):
+        tasks.put(i)
+    for _ in range(NPROC):
+        tasks.put(-1)
 
-rest = N
-while rest:
-    i, res = results.get()
-    rest -= 1
-    delta[i, i+1:] = res
+    procs = [Process(target=work, args=(tasks, results))
+             for _ in range(NPROC)]
+    for proc in procs:
+        proc.start()
 
-for proc in procs:
-    proc.join()
+    rest = N
+    while rest:
+        i, (dist, norm) = results.get()
+        rest -= 1
+        dists[i, i+1:] = dist
+        norms[i, i+1:] = norm
+
+    for proc in procs:
+        proc.join()
+
+    return dists, norms
+
+# ---------- main part
+
+with open(name) as f:
+    while True:
+        data_lines = f.readlines(MAXSIZE)
+        if not data_lines:
+            break
+        data = np.array([np.fromstring(line[-cut:-1], sep=' ', dtype='int8')
+                         for line in data_lines])
+        data = data[:, ::2] + data[:, 1::2]
+        data = data.T.copy()
+        dists, norms = process() # TODO: avoid being beaten :)
+        tot_dists += dists
+        tot_norms += norms
+
+delta = (tot_dists + 1e-16)/(tot_norms + 1e-8)  # TODO: do this cleanly
+for i in range(N):
+    delta[i, i] = 0
 
 delta = delta + delta.T
-print(time()-start)
+delta = np.sqrt(delta)
