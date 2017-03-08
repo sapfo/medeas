@@ -31,7 +31,7 @@ def work(tasks, results, data, dist_func):
             return
         results.put((i, compute(i, data, dist_func)))
 
-def process(data: object, dist_func) -> object:
+def process(data, dist_func):
     dists = np.zeros((N, N))
     norms = np.zeros((N, N))
 
