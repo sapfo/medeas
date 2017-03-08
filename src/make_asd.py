@@ -5,21 +5,23 @@ Created on Fri Jun 24 15:29:37 2016
 @author: ivan
 """
 
-TESTING = True
-
 import sys
 import numpy as np
 from multiprocessing import Process, Queue, cpu_count
+
+TESTING = True
 
 if TESTING:
     import matplotlib.pyplot as plt
 
 N = 294
 
+
 def dist_and_norm(a, b, dist_func):
     filt = np.logical_and(a, b)
     dst = filt * dist_func(a-b)
     return np.sum(dst), np.sum(filt)
+
 
 def compute(i, data, dist_func):
     dists = []
@@ -30,12 +32,14 @@ def compute(i, data, dist_func):
         norms.append(norm)
     return dists, norms
 
+
 def work(tasks, results, data, dist_func):
     while True:
         i = tasks.get()
         if i < 0:
             return
         results.put((i, compute(i, data, dist_func)))
+
 
 def process(data, dist_func):
     dists = np.zeros((N, N))
@@ -79,20 +83,20 @@ if __name__ == '__main__':
 
     dist_func = np.vectorize(test_func)
     dist_func = np.abs
-    #dist_func = np.square
+    dist_func = np.square
 
     # ---------- constants
 
     N = 294
-    sites = 24112 # TODO: read this from file
+    sites = 24112  # TODO: read this from file
     cut = N*4
-    name = sys.argv[1] #'C:\\Users\\levkivskyi\\PycharmProjects\\medeas\\test\\bla.tped'
+    name = sys.argv[1]  # C:\Users\levkivskyi\PycharmProjects\medeas\test\...
 
     NPROC = cpu_count()
 
     # this should be large to avoid overhead of spawning new processes
     # or we need to reuse them somehow
-    MAXSIZE = 100*2**20 # 100 MB
+    MAXSIZE = 100*2**20  # 100 MB
 
     # ---------- global data
 
@@ -107,7 +111,8 @@ if __name__ == '__main__':
             data_lines = f.readlines(MAXSIZE)
             if not data_lines:
                 break
-            data = np.array([np.fromstring(line[-cut:-1], sep=' ', dtype='int8')
+            data = np.array([np.fromstring(line[-cut:-1], sep=' ',
+                                           dtype='int8')
                              for line in data_lines])
             data = data[:, ::2] + data[:, 1::2]
             data = data.T.copy()
