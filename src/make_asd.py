@@ -136,3 +136,21 @@ if __name__ == '__main__':
         plt.ylabel('j individual')
         plt.title('Distance matrix')
         plt.show()
+
+
+def inv_filter(p1, p2, p3): # This should be moved to other place actually
+    M = np.eye(3)
+    for i in range(3):
+        M[i, 0] += 2*p1*p2
+        M[i, 1] += 2*p1*p3
+        M[i, 2] += 2*p2*p3
+    M[0, 0] -= p1+p2
+    M[1, 1] -= p1+p3
+    M[2, 2] -= p2+p3
+    M[0, 1] -= p3
+    M[0, 2] -= p3
+    M[1, 0] -= p2
+    M[1, 2] -= p2
+    M[2, 0] -= p1
+    M[2, 1] -= p1
+    return np.matrix(M)**-1
