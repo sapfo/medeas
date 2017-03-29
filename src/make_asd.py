@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
     dist_func = np.vectorize(test_func)
     dist_func = np.abs
-    dist_func = np.square
+    #dist_func = np.square
 
     # ---------- constants
 
@@ -135,6 +135,36 @@ if __name__ == '__main__':
         plt.xlabel('i individual')
         plt.ylabel('j individual')
         plt.title('Distance matrix')
+
+        a = -delta**2/2
+
+        at0 = np.sum(a, 0)/N
+        att = np.sum(a)/N**2
+
+        one = np.ones((N,))
+        b = a - np.outer(at0, one) - np.outer(one, at0) + att
+
+        lambdas, vecs = np.linalg.eig(b)
+        plt.figure()
+        lambdas = list(sorted(lambdas))
+        plt.hist(lambdas[:-5], 50)
+        plt.figure()
+        plt.hist(np.diff(lambdas[:-8])[1:], 50)
+
+        lambdas = np.array(lambdas)
+        s1 = np.sum(lambdas)
+        s2 = np.sum(lambdas**2)
+
+        print((N+1)*s1**2/((N-1)*s2 - s1**2))
+        print(s1)
+        print(s2)
+
+        lambdas = lambdas[:-5]
+
+        s1 = np.sum(lambdas)
+        s2 = np.sum(lambdas**2)
+        print((N+1)*s1**2/((N-1)*s2 - s1**2))
+
         plt.show()
 
 
