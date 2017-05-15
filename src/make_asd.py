@@ -8,6 +8,7 @@ Created on Fri Jun 24 15:29:37 2016
 import sys
 import numpy as np
 from multiprocessing import Process, Queue, cpu_count
+from typing import Tuple, Callable, List, Sequence, IO
 
 TESTING = True
 
@@ -17,15 +18,24 @@ if TESTING:
 N = 294
 
 
-def dist_and_norm(a, b, dist_func):
+def dist_and_norm(a: 'np.ndarray[int]', b: 'np.ndarray[int]',
+                  dist_func: Callable[[np.ndarray], np.ndarray]
+                  ) -> Tuple[float, int]:
+    """Calculate un-normalized distance and norm between vectors 'a' and 'b'.
+    Norm is number of sites 'i' where both 'a[i]' and 'b[i]' are non-zero.
+    Other sites does not contribute to distance.
+    """
     filt = np.logical_and(a, b)
     dst = filt * dist_func(a-b)
     return np.sum(dst), np.sum(filt)
 
 
-def compute(i, data, dist_func):
-    dists = []
-    norms = []
+def compute(i: int, data: 'np.ndarray[int]',
+            dist_func: Callable[[np.ndarray], np.ndarray]
+            ) -> Tuple[List[float], List[int]]:
+    """Compute all distances and norms for 'i'th row in 'data'."""
+    dists: List[float] = []
+    norms: List[int] = []
     for j in range(i+1, N):
         dist, norm = dist_and_norm(data[i], data[j], dist_func)
         dists.append(dist)
@@ -33,7 +43,11 @@ def compute(i, data, dist_func):
     return dists, norms
 
 
-def work(tasks, results, data, dist_func):
+def work(tasks: 'Queue[int]',
+         results: 'Queue[Tuple[int, Tuple[List[float], List[int]]]]',
+         data: 'np.ndarray[int]', dist_func: Callable[[np.ndarray], np.ndarray]
+         ) -> None:
+    """Compute distaces and norms for rows from 'tasks'."""
     while True:
         i = tasks.get()
         if i < 0:
@@ -41,7 +55,12 @@ def work(tasks, results, data, dist_func):
         results.put((i, compute(i, data, dist_func)))
 
 
-def process(data, dist_func):
+def process(data: 'np.ndarray[int]',
+            dist_func: Callable[[np.ndarray], np.ndarray]
+            ) -> Tuple['np.ndarray[float]', 'np.ndarray[int]']:
+    """Calculate matrices of un-normalized distances and norms for 'data'
+    using given distance function.
+    """
     dists = np.zeros((N, N))
     norms = np.zeros((N, N))
 
@@ -68,7 +87,10 @@ def process(data, dist_func):
     return dists, norms
 
 
-def dens(x, a, b):
+def dens(x: float, a: float, b: float) -> float:
+    """Integral of Marchenko-Pastur distribution function on interval
+    a < x < b.
+    """
     arc1 = np.arcsin((2*x - a - b)/(b - a))
     arc2 = np.arcsin(((a+b)*x-2*a*b)/x/(b - a))
     res = (np.sqrt((b-x)*(x-a))
@@ -77,19 +99,25 @@ def dens(x, a, b):
             + np.pi*((a+b)/2 - np.sqrt(a*b))/2)
     return res
 
-def dens_fit(x, T, L):
+def dens_fit(x: float, T: float, L: int):
+    """Integral of Marchenko-Pastur distribution function for
+    arbitrary x from total tree length 'T' and number of markers L.
+    """
     a = 2/T**2 * (1 - np.sqrt(N/L))**2
     b = 2/T**2 * (1 + np.sqrt(N/L))**2
-    if x <= a+0.001:
+    if x <= a + 0.001:
         return 0.0
-    if x >= b-0.001:
-        return N*1.0
+    if x >= b - 0.001:
+        return N * 1.0
     return N * dens(x, a, b) / dens(b-0.001, a, b)
 
 
-def find_TW(lambdas):
+def find_TW(lambdas: Sequence[float]) -> float:
+    """Find Tracy-Widom statistics for the highest (first) eigenvalue
+    among 'lambdas'.
+    """
     m = len(lambdas)
-    n = 1818
+    n = 1818 # number of markers
     mu = (np.sqrt(n - 1) + np.sqrt(m))**2 / n
     sigma = (1/np.sqrt(n-1) + 1/np.sqrt(m))**(1/3) * (np.sqrt(n - 1) + np.sqrt(m)) / n
     l = m*lambdas[0]/np.sum(lambdas)
@@ -127,7 +155,7 @@ if __name__ == '__main__':
     # Maybe process input file in chunks?
     # On POSIX everything is already fine because of "copy-on-write"
 
-    def test_func(dst):
+    def test_func(dst: int) -> int:
         if dst > 1:
             return dst**2
         else:
@@ -159,6 +187,7 @@ if __name__ == '__main__':
     tasks = Queue()
     results = Queue()
 
+    f: IO[str]
     with open(name) as f:
         while True:
             data_lines = f.readlines(MAXSIZE)
