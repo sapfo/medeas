@@ -69,23 +69,17 @@ def process(data, dist_func):
 
 
 def dens(x, a, b):
-    print('arg1', (2*x - a - b)/(b - a))
     arc1 = np.arcsin((2*x - a - b)/(b - a))
-    print('!!!!!!!res1', arc1)
-    print('arg2', ((a+b)*x-2*a*b)/x/(b - a))
     arc2 = np.arcsin(((a+b)*x-2*a*b)/x/(b - a))
-    print('!!!!!!!res2', arc2)
     res = (np.sqrt((b-x)*(x-a))
             + (a+b)*arc1/2
             - np.sqrt(a*b)*arc2
             + np.pi*((a+b)/2 - np.sqrt(a*b))/2)
-    print('RESULT', res)
     return res
 
 def dens_fit(x, T, L):
     a = 2/T**2 * (1 - np.sqrt(N/L))**2
     b = 2/T**2 * (1 + np.sqrt(N/L))**2
-    print("CALLED:", T, L, "with", a, b, x)
     if x <= a+0.001:
         return 0.0
     if x >= b-0.001:
@@ -187,7 +181,7 @@ if __name__ == '__main__':
             delta[i, j] = delta[j, i] = tot_dists[i, j]/tot_norms[i, j]
     delta = delta**.5
 
-    print('woohoo!')
+    print('Distance matrix computed')
     if TESTING:
         plt.pcolor(delta)
         plt.colorbar()
@@ -322,9 +316,6 @@ if __name__ == '__main__':
         plt.figure()
         plt.pcolor(stds)
         plt.colorbar()
-        #from pprint import pprint
-        #pprint(dd)
-        #pprint(ds)
         plt.show()
 
 
