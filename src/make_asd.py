@@ -8,9 +8,10 @@ Created on Fri Jun 24 15:29:37 2016
 import sys
 import numpy as np
 from multiprocessing import Process, Queue, cpu_count
-from typing import Tuple, Callable, List, Sequence, IO
+from typing import Tuple, Callable, List, IO
+import pickle
 
-TESTING = False
+TESTING = True
 
 if TESTING:
     import matplotlib.pyplot as plt
@@ -149,6 +150,8 @@ if __name__ == '__main__':
         for j in range(i+1, N):
             delta[i, j] = delta[j, i] = tot_dists[i, j]/tot_norms[i, j]
     delta = delta**.5
+    with open('temp_asd.asd', 'wb') as f:
+        pickle.dump(delta, f)
 
     print('Distance matrix computed')
     if TESTING:
@@ -157,24 +160,10 @@ if __name__ == '__main__':
         plt.xlabel('i individual')
         plt.ylabel('j individual')
         plt.title('Distance matrix')
-
-        arr = np.hstack((lambdas.reshape((N, 1)), vecs.T)).copy()
-        arr = sorted(arr, key=lambda x: x[0], reverse=True)
-        for i, v in enumerate(arr.copy()):
-            arr[i] = np.sqrt(v[0])*v[1:]
-        arr = arr[:14]
-        arr = np.array(arr)
-        arr = arr.T
-        lambdas = list(sorted(lambdas, reverse=True))
-        lambdas = np.array(lambdas)
-        plt.figure()
-        plt.plot(lambdas, 'b.')
-        plt.figure()
-        plt.hist(lambdas[5:], 50)
-
         flat = delta.reshape(N**2,)
         plt.figure()
         plt.hist(flat, 1250)
+        plt.show()
 
 
 def inv_filter(p1, p2, p3): # This should be moved to other place actually

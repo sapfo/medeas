@@ -1,5 +1,17 @@
 import numpy as np
 from scipy.optimize import curve_fit
+from typing import Sequence
+import matplotlib.pyplot as plt
+import pickle
+
+TESTING = True
+
+with open('temp_eig.data', 'rb') as f:
+    lambdas, vecs = pickle.load(f)
+
+lambdas = np.array(sorted(lambdas, reverse=True))
+
+N = 294
 
 def dens(x: float, a: float, b: float) -> float:
     """Integral of Marchenko-Pastur distribution function on interval
@@ -81,6 +93,10 @@ plt.plot(lambdas_se, l_dens_fit)
 # Tracy-Widom
 # ====================
 
+lambdas0 = lambdas.copy()
+
+s1 = np.sum(lambdas0)
+s2 = np.sum(lambdas0**2)
 
 print((N+1)*s1**2/((N-1)*s2 - s1**2))
 print(s1)
@@ -94,14 +110,14 @@ while s > 3.2724:  # for p-value 0.001
     print(f'eigenvalue {i}: TW = {s}')
     i += 1
     lambdas = lambdas[1:]
-print('-'*20)
-print('shape', arr.shape)
-print('-'*20)
-lambdas1 = lambdas[5:]
 
-s1 = np.sum(lambdas1)
-s2 = np.sum(lambdas1**2)
-print((N+1)*s1**2/((N-1)*s2 - s1**2))
+if TESTING:
+    lambdas = list(sorted(lambdas, reverse=True))
+    lambdas = np.array(lambdas)
+    plt.figure()
+    plt.plot(lambdas, 'b.')
+    plt.figure()
+    plt.hist(lambdas[5:], 50)
 
 #plt.figure()
 #plt.hist(np.diff(lambdas[8:])[1:], 50)

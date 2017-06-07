@@ -2,8 +2,29 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering as AC
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import pickle
+from collections import Counter
 
-npop =8
+N = 294
+
+with open('temp_asd.asd', 'rb') as f:
+    delta = pickle.load(f)
+
+with open('temp_eig.data', 'rb') as f:
+    lambdas, vecs = pickle.load(f)
+
+arr = np.hstack((lambdas.reshape((N, 1)), vecs.T)).copy()
+arr = sorted(arr, key=lambda x: x[0], reverse=True)
+for i, v in enumerate(arr.copy()):
+    arr[i] = np.sqrt(v[0])*v[1:]
+
+print(len(arr))
+arr = arr[:7]
+arr = np.array(arr)
+print(arr.shape)
+arr = arr.T
+
+npop = 8
 
 clusterer = AC(n_clusters=npop)
 labs = clusterer.fit_predict(arr)
@@ -12,6 +33,7 @@ labels = [hex(l)[-1].upper() for l in labs]
 with open('../test/bla.tfam') as f:
     new_data = f.readlines()
 labels_0 = [l.split()[0].strip('"') for l in new_data]
+print('Labels:', Counter(labels_0))
 
 for p, q in [(0, 1), (0, 2), (1, 2), (0, 3), (1, 3), (2, 3)]:
     fig, ax = plt.subplots()
