@@ -11,7 +11,10 @@ with open('temp_eig.data', 'rb') as f:
 
 lambdas = np.array(sorted(lambdas, reverse=True))
 
-N = 294
+plt.bar(range(132), lambdas)
+plt.savefig('lambdas.svg')
+
+N = 132  # 270  # 66  # 294
 
 def dens(x: float, a: float, b: float) -> float:
     """Integral of Marchenko-Pastur distribution function on interval
@@ -43,7 +46,7 @@ def find_TW(lambdas: Sequence[float]) -> float:
     among 'lambdas'.
     """
     m = len(lambdas)
-    n = 1818 # number of markers
+    n = 7642  # 17365 # 245 # 1818 # number of markers
     mu = (np.sqrt(n - 1) + np.sqrt(m))**2 / n
     sigma = (1/np.sqrt(n-1) + 1/np.sqrt(m))**(1/3) * (np.sqrt(n - 1) + np.sqrt(m)) / n
     l = m*lambdas[0]/np.sum(lambdas)
@@ -88,6 +91,7 @@ plt.figure()
 plt.plot(lambdas_s, range(len(lambdas_s)))
 l_dens_fit = [dens_fit(l, *popt) for l in lambdas_se]
 plt.plot(lambdas_se, l_dens_fit)
+plt.show()
 
 # ====================
 # Tracy-Widom

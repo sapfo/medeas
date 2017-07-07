@@ -1,10 +1,15 @@
 import numpy as np
 import pickle
 
-N = 294
+#N = 294
 
-with open('temp_asd.asd', 'rb') as f:
+import sys
+
+with open(f'austr.pp.{int(sys.argv[1])}.cut.asd', 'rb') as f: # temp_asd.asd
     delta = pickle.load(f)
+
+N = len(delta)
+print(N)
 
 a = -delta**2/2
 

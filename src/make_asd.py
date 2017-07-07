@@ -16,7 +16,7 @@ TESTING = True
 if TESTING:
     import matplotlib.pyplot as plt
 
-N = 294
+N = 270  # 66  # 294
 
 
 def dist_and_norm(a: 'np.ndarray[int]', b: 'np.ndarray[int]',
@@ -26,7 +26,7 @@ def dist_and_norm(a: 'np.ndarray[int]', b: 'np.ndarray[int]',
     Norm is number of sites 'i' where both 'a[i]' and 'b[i]' are non-zero.
     Other sites does not contribute to distance.
     """
-    filt = np.logical_and(a, b)
+    filt = np.ones(a.shape) # np.logical_and(a, b)
     dst = filt * dist_func(a-b)
     return np.sum(dst), np.sum(filt)
 
@@ -37,6 +37,7 @@ def compute(i: int, data: 'np.ndarray[int]',
     """Compute all distances and norms for 'i'th row in 'data'."""
     dists: List[float] = []
     norms: List[int] = []
+    print(f'Processing row #{i}')
     for j in range(i+1, N):
         dist, norm = dist_and_norm(data[i], data[j], dist_func)
         dists.append(dist)
@@ -89,6 +90,8 @@ def process(data: 'np.ndarray[int]',
 
 
 if __name__ == '__main__':
+    
+    pp = int(sys.argv[2])
 
     # On Windows, processes execute the whole file before forking
     # therefore we protect this code with if __name__ == '__main__'
@@ -105,11 +108,11 @@ if __name__ == '__main__':
     dist_func = np.vectorize(test_func)
     dist_func = np.abs
     dist_func = np.square
-    dist_func = lambda x: np.abs(x)**2
+    dist_func = lambda x: np.abs(x)**pp
 
     # ---------- constants
 
-    N = 294
+    N = 270 # 66 # 294
     sites = 24112  # TODO: read this from file
     cut = N*4
     name = sys.argv[1]  # C:\Users\levkivskyi\PycharmProjects\medeas\test\...
@@ -118,7 +121,7 @@ if __name__ == '__main__':
 
     # this should be large to avoid overhead of spawning new processes
     # or we need to reuse them somehow
-    MAXSIZE = 100*2**20  # 100 MB
+    MAXSIZE = 200*2**20  # 200 MB
 
     # ---------- global data
 
@@ -132,12 +135,15 @@ if __name__ == '__main__':
     with open(name) as f:
         while True:
             data_lines = f.readlines(MAXSIZE)
+            print('Chunk loading started')
             if not data_lines:
                 break
-            data = np.array([np.fromstring(line[-cut:-1], sep=' ',
-                                           dtype='int8')
+            #data = np.genfromtxt(data_lines, dtype='int8', delimiter=1)
+            data = np.array([list(map(int, line.strip())) # np.fromstring(line, sep=' ',  # line[-cut:-1]
+                                  #         dtype='int8')
                              for line in data_lines])
-            data = data[:, ::2] + data[:, 1::2]
+            #data = data[:, ::2] + data[:, 1::2]
+            print('Chunk loaded')
             data = data.T.copy()
             dists, norms = process(data, dist_func)
             tot_dists += dists
@@ -149,8 +155,8 @@ if __name__ == '__main__':
     for i in range(N):
         for j in range(i+1, N):
             delta[i, j] = delta[j, i] = tot_dists[i, j]/tot_norms[i, j]
-    delta = delta**.5
-    with open('temp_asd.asd', 'wb') as f:
+    delta = delta**(1/pp)
+    with open(f'austr.pp.{pp}.asd', 'wb') as f:
         pickle.dump(delta, f)
 
     print('Distance matrix computed')
@@ -162,7 +168,20 @@ if __name__ == '__main__':
         plt.title('Distance matrix')
         flat = delta.reshape(N**2,)
         plt.figure()
-        plt.hist(flat, 1250)
+        plt.hist(flat, 50)
+        plt.title('Distances')
+        plt.figure()
+        norm_counts = tot_norms.reshape((N**2,))
+        plt.hist(norm_counts, 50)
+        plt.title('SNP counts between pairs')
+        plt.figure()
+        plt.pcolor(tot_dists)
+        plt.colorbar()
+        plt.title('Unnormalized distances')
+        plt.figure()
+        plt.pcolor(tot_norms)
+        plt.colorbar()
+        plt.title('Norms')
         plt.show()
 
 
