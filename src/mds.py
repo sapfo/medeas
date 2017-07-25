@@ -5,21 +5,23 @@ import pickle
 
 import sys
 
-with open(f'austr.pp.{int(sys.argv[1])}.cut.asd', 'rb') as f: # temp_asd.asd
-    delta = pickle.load(f)
+def calc_mds(file, outfile):
 
-N = len(delta)
-print(N)
+    with open(file, 'rb') as f: # temp_asd.asd
+         delta = pickle.load(f)
 
-a = -delta**2/2
+    N = len(delta)
+    print(N)
 
-at0 = np.sum(a, 0)/N
-att = np.sum(a)/N**2
+    a = -delta**2/2
 
-one = np.ones((N,))
-b = a - np.outer(at0, one) - np.outer(one, at0) + att
+    at0 = np.sum(a, 0)/N
+    att = np.sum(a)/N**2
 
-lambdas, vecs = np.linalg.eig(b)
+    one = np.ones((N,))
+    b = a - np.outer(at0, one) - np.outer(one, at0) + att
 
-with open('temp_eig.data', 'wb') as f:
-    pickle.dump((lambdas, vecs), f)
+    lambdas, vecs = np.linalg.eig(b)
+
+    with open(outfile, 'wb') as f:
+        pickle.dump((lambdas, vecs), f)

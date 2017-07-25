@@ -8,22 +8,24 @@ Created on Thu Jun 22 12:58:54 2017
 
 import numpy as np
 
-mu = {}
-sigma = {}
-for group in range(1, 5):
-    print(f'Initial loading, group {group}')
-    freqs = np.loadtxt(f'abo.all.freqs.{group}.txt', dtype='int8')
-    print(freqs.shape)
-    mu[group] = np.mean(freqs)
-    sigma[group] = np.std(freqs)
+def load_freqs(freq_pattern):
+    mu = {}
+    sigma = {}
+    for group in range(1, 5):
+        print(f'Initial loading, group {group}')
+        freqs = np.loadtxt(freq_pattern.format(group), dtype='int8')
+        mu[group] = np.mean(freqs)
+        sigma[group] = np.std(freqs)
+    return mu, sigma
 
-def process_chromosome(num: int) -> None:
-    print(f'Started processing chromosome #{num}')
+def soft_filter(ancestry_file: str, snp_file: str, outfile: str, ancestry_outfile: str,
+                mu, sigma, width: float) -> None:
+
+    print(f'Started processing', ancestry_file)
     
-    ancestry = np.genfromtxt(f'eur.chi.pap.wcd.abo.chr{num}.g10.txt.0.Viterbi.txt',
-                             dtype='int8')
-    print(f'Loaded ancestry for chromosome #{num}')
-    snps = np.loadtxt(f'abo.all.chr{num}.stped', dtype='int8')
+    ancestry = np.genfromtxt(ancestry_file, dtype='int8')
+    print(f'Loaded ancestry from', ancestry_file)
+    snps = np.loadtxt(snp_file, dtype='int8')
     cond = np.ones((snps.shape[0],))
 
     group: int
@@ -32,11 +34,10 @@ def process_chromosome(num: int) -> None:
         print(f'Processed selectors for group {group}')
         freqs = np.sum(is_ancestry, axis=1)
         print(f'Processed filters for group {group}')
-        cond = np.logical_and(cond, freqs < mu[group] + 2*sigma[group])
-        cond = np.logical_and(cond, freqs > mu[group] - 2*sigma[group])
+        cond = np.logical_and(cond, freqs < mu[group] + width*sigma[group])
+        cond = np.logical_and(cond, freqs > mu[group] - width*sigma[group])
         
     snps = snps[np.where(cond)]
-    np.savetxt(f'abo.all.chr{num}.filtered.stped', snps, fmt='%1d')
-
-for num in range(1, 23):
-    process_chromosome(num)
+    np.savetxt(outfile, snps, fmt='%1d')
+    ancestry = ancestry[np.where(cond)]
+    np.savetxt(ancestry_outfile, ancestry, fmt='%1d')

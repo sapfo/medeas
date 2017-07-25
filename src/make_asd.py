@@ -11,12 +11,13 @@ from multiprocessing import Process, Queue, cpu_count
 from typing import Tuple, Callable, List, IO
 import pickle
 
-TESTING = True
+TESTING = False
+NPROC = cpu_count()
 
 if TESTING:
     import matplotlib.pyplot as plt
 
-N = 270  # 66  # 294
+# N = 270  # 66  # 294
 
 
 def dist_and_norm(a: 'np.ndarray[int]', b: 'np.ndarray[int]',
@@ -32,8 +33,8 @@ def dist_and_norm(a: 'np.ndarray[int]', b: 'np.ndarray[int]',
 
 
 def compute(i: int, data: 'np.ndarray[int]',
-            dist_func: Callable[[np.ndarray], np.ndarray]
-            ) -> Tuple[List[float], List[int]]:
+            dist_func: Callable[[np.ndarray], np.ndarray],
+            N: int) -> Tuple[List[float], List[int]]:
     """Compute all distances and norms for 'i'th row in 'data'."""
     dists: List[float] = []
     norms: List[int] = []
@@ -47,19 +48,19 @@ def compute(i: int, data: 'np.ndarray[int]',
 
 def work(tasks: 'Queue[int]',
          results: 'Queue[Tuple[int, Tuple[List[float], List[int]]]]',
-         data: 'np.ndarray[int]', dist_func: Callable[[np.ndarray], np.ndarray]
-         ) -> None:
+         data: 'np.ndarray[int]', dist_func: Callable[[np.ndarray], np.ndarray],
+         N: int) -> None:
     """Compute distaces and norms for rows from 'tasks'."""
     while True:
         i = tasks.get()
         if i < 0:
             return
-        results.put((i, compute(i, data, dist_func)))
+        results.put((i, compute(i, data, dist_func, N)))
 
 
 def process(data: 'np.ndarray[int]',
-            dist_func: Callable[[np.ndarray], np.ndarray]
-            ) -> Tuple['np.ndarray[float]', 'np.ndarray[int]']:
+            dist_func: Callable[[np.ndarray], np.ndarray],
+            tasks, results, N) -> Tuple['np.ndarray[float]', 'np.ndarray[int]']:
     """Calculate matrices of un-normalized distances and norms for 'data'
     using given distance function.
     """
@@ -71,7 +72,7 @@ def process(data: 'np.ndarray[int]',
     for _ in range(NPROC):
         tasks.put(-1)
 
-    procs = [Process(target=work, args=(tasks, results, data, dist_func))
+    procs = [Process(target=work, args=(tasks, results, data, dist_func, N))
              for _ in range(NPROC)]
     for proc in procs:
         proc.start()
@@ -88,11 +89,7 @@ def process(data: 'np.ndarray[int]',
 
     return dists, norms
 
-
-if __name__ == '__main__':
-    
-    pp = int(sys.argv[2])
-
+def asd_main(pp, name, out_name):
     # On Windows, processes execute the whole file before forking
     # therefore we protect this code with if __name__ == '__main__'
     # Need to think how to avoid copying ``data`` on forking.
@@ -112,11 +109,6 @@ if __name__ == '__main__':
 
     # ---------- constants
 
-    N = 270 # 66 # 294
-    sites = 24112  # TODO: read this from file
-    cut = N*4
-    name = sys.argv[1]  # C:\Users\levkivskyi\PycharmProjects\medeas\test\...
-
     NPROC = cpu_count()
 
     # this should be large to avoid overhead of spawning new processes
@@ -124,6 +116,9 @@ if __name__ == '__main__':
     MAXSIZE = 200*2**20  # 200 MB
 
     # ---------- global data
+
+    with open(name) as f:
+        N = len(f.readline())//2
 
     tot_dists = np.zeros((N, N))
     tot_norms = np.zeros((N, N))
@@ -138,14 +133,13 @@ if __name__ == '__main__':
             print('Chunk loading started')
             if not data_lines:
                 break
-            #data = np.genfromtxt(data_lines, dtype='int8', delimiter=1)
-            data = np.array([list(map(int, line.strip())) # np.fromstring(line, sep=' ',  # line[-cut:-1]
-                                  #         dtype='int8')
+            data = np.array([np.fromstring(line, sep=' ',  # line[-cut:-1]
+                                           dtype='int8')
                              for line in data_lines])
             #data = data[:, ::2] + data[:, 1::2]
             print('Chunk loaded')
             data = data.T.copy()
-            dists, norms = process(data, dist_func)
+            dists, norms = process(data, dist_func, tasks, results, N)
             tot_dists += dists
             tot_norms += norms
 
@@ -156,7 +150,7 @@ if __name__ == '__main__':
         for j in range(i+1, N):
             delta[i, j] = delta[j, i] = tot_dists[i, j]/tot_norms[i, j]
     delta = delta**(1/pp)
-    with open(f'austr.pp.{pp}.asd', 'wb') as f:
+    with open(out_name, 'wb') as f:
         pickle.dump(delta, f)
 
     print('Distance matrix computed')
@@ -201,3 +195,10 @@ def inv_filter(p1, p2, p3): # This should be moved to other place actually
     M[2, 0] -= p1
     M[2, 1] -= p1
     return np.matrix(M)**-1
+
+if __name__ == '__main__':
+    pp = int(sys.argv[2])
+    name = sys.argv[1]  # C:\Users\levkivskyi\PycharmProjects\medeas\test\...
+    out_name = f'out.pp.{pp}.asd'
+
+    asd_main(pp, name, out_name)

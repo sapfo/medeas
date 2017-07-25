@@ -8,36 +8,23 @@ Created on Mon Jun 26 14:56:35 2017
 
 import numpy as np
 
-mu = {}
-sigma = {}
-for group in range(1, 5):
-    print(f'Initial loading, group {group}')
-    freqs = np.loadtxt(f'abo.all.freqs.{group}.txt', dtype='int8')
-    print(freqs.shape)
-    mu[group] = np.mean(freqs)
-    sigma[group] = np.std(freqs)
 
-def process_chromosome(num: int) -> None:
-    print(f'Started processing chromosome #{num}')
+def hard_filter(ancestry_file: str, new_ancestry_file: str,
+                infile: str, outfile: str,
+                group: int, ratio: float) -> None:
+    print(f'Started processing', ancestry_file)
     
-    ancestry = np.genfromtxt(f'eur.chi.pap.wcd.abo.chr{num}.g10.txt.0.Viterbi.txt',
-                             dtype='int8')
-    print(f'Loaded ancestry for chromosome #{num}')
-    snps = np.loadtxt(f'abo.all.chr{num}.stped', dtype='int8')
-    cond = np.ones((snps.shape[0],))
-
-    group: int
-    for group in range(1, 5):
+    ancestry = np.genfromtxt(ancestry_file, dtype='int8')
+    snps = np.loadtxt(infile, dtype='int8')
+    if ancestry.shape[0]:  # guard for empty files
         is_ancestry = 1 - np.sign(ancestry - group) ** 2
-        print(f'Processed selectors for group {group}')
         freqs = np.sum(is_ancestry, axis=1)
-        print(f'Processed filters for group {group}')
-        cond = np.logical_and(cond, freqs < mu[group] + 2*sigma[group])
-        cond = np.logical_and(cond, freqs > mu[group] - 2*sigma[group])
-    cond = np.logical_and(cond, freqs > 58)
-        
-    snps = snps[np.where(cond)]
-    np.savetxt(f'abo.all.chr{num}.hardfilter.stped', snps, fmt='%1d')
+        print(f'Loaded ancestry from', ancestry_file)
+        max_freq = is_ancestry.shape[1]
+        cond = freqs > max_freq * ratio
 
-for num in range(1, 23):
-    process_chromosome(num)
+        rows = np.where(cond)
+        snps = snps[rows]
+        ancestry = ancestry[rows]
+    np.savetxt(outfile, snps, fmt='%1d')
+    np.savetxt(new_ancestry_file, ancestry, fmt='%1d')
