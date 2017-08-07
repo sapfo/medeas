@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from src.make_asd import asd_main
 from src.mds import calc_mds
 from src.lambda_analyze import find_T_and_L, find_K
+from src.clustering import perform_clustering, find_tree, find_distances, validate_dists
 from processing.recode import recode_wide
 from processing.freqs import calculate_freqs
 from processing.filter_freqs import load_freqs, soft_filter
@@ -54,7 +55,7 @@ def read_labs(file: str) -> List[str]:
 def save_labs(labs: Iterable[str], file: str) -> None:
     with open(file, 'w') as f:
         return f.writelines(labs)
-    
+
 labs = np.array([l.split()[0] for l in read_labs(labels_file)])
 
 
@@ -118,5 +119,12 @@ if '-analyze' in sys.argv:
     calc_mds(asd_pattern.format(2), vec_pattern.format(2))
     T, L = find_T_and_L(vec_pattern.format(1))
     K = find_K(vec_pattern.format(1), L)
-    print(K)
-    
+    print('Number of clusters found:', K)
+    labels, short_array, lambdas = perform_clustering(K,
+                                                      vec_pattern.format(1),
+                                                      labels_file + '.final')
+    outgroup = '2'
+    tree, ns, blocks = find_tree(K, asd_pattern.format(1), labels, short_array,
+                                 outgroup)
+    dists = find_distances(K, T, tree, ns, lambdas, blocks)
+    print('Found distances:', dists)
