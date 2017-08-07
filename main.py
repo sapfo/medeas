@@ -6,6 +6,8 @@ Created on Mon Jul 10 12:20:25 2017
 @author: ivan
 """
 
+# TODO: use argparse and/or config file
+
 from typing import List, Iterable
 
 import sys
@@ -27,7 +29,7 @@ from multiprocessing import cpu_count
 ancestry_pattern = sys.argv[1]
 snps_pattern = sys.argv[2] if len(sys.argv) > 2 else None
 
-labels_file = 'test/small_files/haplotype_labels.small.txt'
+labels_file = 'test/small_files/haplotype_labels.small.txt'  # TODO: this should be in argv[]
 chromosomes = range(1, 23)
 
 snps_pattern_stped = snps_pattern + '.stped'
@@ -37,6 +39,8 @@ filtered_pattern = snps_pattern_stped + '.filtered'
 filtered_ancestry_pattern = ancestry_pattern + '.filtered'
 hard_filtered_pattern = filtered_pattern + '.hard'
 hard_filtered_ancestry_pattern = filtered_ancestry_pattern + '.hard'
+
+# TODO: Use temporary folder (or read these from argv[]?)
 missingnes_pattern = 'test/small_files/processed.chr.{}.stped'
 big_file_name = 'test/small_files/big_file.stped'
 
@@ -111,6 +115,7 @@ if '-manual' in sys.argv:
         save_labs(new_labs, labels_file + '.final')
 
 if '-asd' in sys.argv:
+    # TODO: avoid using big_file, refactor asd_main instead to read from list of files
     asd_main(1, final_big_file, asd_pattern.format(1))
     asd_main(2, final_big_file, asd_pattern.format(2))
 
@@ -128,3 +133,6 @@ if '-analyze' in sys.argv:
                                  outgroup)
     dists = find_distances(K, T, tree, ns, lambdas, blocks)
     print('Found distances:', dists)
+
+# TODO: Implement statistical bootstrap
+# TODO: Refactor main into four parts: actual main, prepare.py, single_pass.py, bootstrap.py

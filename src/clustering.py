@@ -28,7 +28,7 @@ def perform_clustering(npop, vectors_file, labels_file):
 
     for (i, l) in enumerate(labels.copy()):
         if l == 'ABO':
-            labels[i] = labels_d[i]
+            labels[i] = labels_d[i]  # TODO: move this logic to main.py
 
     colormap = {
             'CAI': '#2679B2',
@@ -45,12 +45,13 @@ def perform_clustering(npop, vectors_file, labels_file):
     'CHI': 'black',
     'BRI': 'blue',
     'PAP': 'red'
-            }
+            }  # TODO: Autogenerate colormap
 
     ######
     labels0 = np.array([l.split()[0] for l in lines])
 
     where = np.where(np.logical_or(labels0 == 'ABO', labels0 == 'WCD'))[0]
+    # TODO: move the above logic to main.py
 
     labels = np.array(labels)[where]
     ######
@@ -73,6 +74,7 @@ def perform_clustering(npop, vectors_file, labels_file):
     labs = clusterer.fit_predict(arr)
     labels = [hex(l)[-1].upper() for l in labs]
 
+    # TODO: autogenerate nice summary plot depending on 'npop'
     for p, q in [(0, 1), (0, 2), (1, 2), (0, 3), (1, 3), (2, 3)]:
         fig, ax = plt.subplots()
         ax.scatter(arr.T[p], arr.T[q], c=colors, s=100)
@@ -237,8 +239,10 @@ def find_distances(npop, T, new_tree, ns, lambdas, blocks):
         real_vals = np.array(sorted(real_vals, reverse=True))[:npop-1]
         return real_vals - ls
 
+    # TODO: find more solutions for D using different initial points (grid(-) or random(+))
     res = least_squares(dev, inits, bounds=(mins, maxs), gtol=1e-15)
     return res
 
+# TODO: implement validations: positive values and order
 def validate_dists(dists, constraints):
     return True
