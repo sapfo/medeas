@@ -29,11 +29,11 @@ from multiprocessing import cpu_count
 ancestry_pattern = sys.argv[1]
 snps_pattern = sys.argv[2] if len(sys.argv) > 2 else None
 
-labels_file = 'test/small_files/haplotype_labels.small.txt'  # TODO: this should be in argv[]
+labels_file = sys.argv[3]
 chromosomes = range(1, 23)
 
 snps_pattern_stped = snps_pattern + '.stped'
-group_pattern = 'small.group.{}'
+group_pattern = 'group.{}'
 freqs_pattern = group_pattern + '.freqs'
 filtered_pattern = snps_pattern_stped + '.filtered'
 filtered_ancestry_pattern = ancestry_pattern + '.filtered'
@@ -41,15 +41,15 @@ hard_filtered_pattern = filtered_pattern + '.hard'
 hard_filtered_ancestry_pattern = filtered_ancestry_pattern + '.hard'
 
 # TODO: Use temporary folder (or read these from argv[]?)
-missingnes_pattern = 'test/small_files/processed.chr.{}.stped'
-big_file_name = 'test/small_files/big_file.stped'
+missingnes_pattern = 'processed.chr.{}.stped'
+big_file_name = '../raw_data_copy/big_file.stped'
 
-final_big_file = 'test/small_files/big_file.stped.final'
-asd_pattern = 'test/small_files.pp.{}.asd.data'
-vec_pattern = 'test/small_files.pp.{}.vecs.data'
+final_big_file = big_file_name + '.final'
+asd_pattern = 'pp.{}.asd.data'
+vec_pattern = 'pp.{}.vecs.data'
 
-def do(task):
-    executor = PPE(cpu_count())
+def do(task, count=cpu_count()):
+    executor = PPE(count)
     return list(executor.map(task, chromosomes))
 
 def read_labs(file: str) -> List[str]:
@@ -60,24 +60,28 @@ def save_labs(labs: Iterable[str], file: str) -> None:
     with open(file, 'w') as f:
         return f.writelines(labs)
 
-labs = np.array([l.split()[0] for l in read_labs(labels_file)])
-
-
 if '-recode' in sys.argv:
     def recode(n):
         recode_wide(snps_pattern.format(n), snps_pattern_stped.format(n))
-    do(recode)
+    do(recode, 2)
 
 if '-freqs' in sys.argv:
     calculate_freqs(ancestry_pattern, group_pattern)
+
+if '-manual' in sys.argv:
+    for n in chromosomes:
+        new_labs = filter_manual(snps_pattern_stped.format(n),
+                                 snps_pattern_stped.format(n) + '.selected',
+                                 ['CHI', 'BRI'], read_labs(labels_file))
+    save_labs(new_labs, labels_file + '.selected')
 
 if '-filter' in sys.argv:
     mu, sigma = load_freqs(freqs_pattern)
     def filterf(n):
         soft_filter(ancestry_pattern.format(n),
-                    snps_pattern_stped.format(n),
+                    snps_pattern_stped.format(n) + '.selected',
                     filtered_pattern.format(n),
-                    filtered_ancestry_pattern.format(n), mu, sigma, 2),
+                    filtered_ancestry_pattern.format(n), mu, sigma, 5),
     do(filterf)
 
 if '-hard' in sys.argv:
@@ -86,8 +90,10 @@ if '-hard' in sys.argv:
                     hard_filtered_ancestry_pattern.format(n),
                     filtered_pattern.format(n),
                     hard_filtered_pattern.format(n),
-                    4, 0.5)
+                    [4, 3], 0.1) # PAP or WCD
     do(hardfilt)
+
+labs = np.array([l.split()[0] for l in read_labs(labels_file)])
 
 if '-miss' in sys.argv:
     def setmiss(n):
@@ -97,38 +103,26 @@ if '-miss' in sys.argv:
                     labs, [1, 2])  # EUR and CHI
     do(setmiss)
 
-if '-comb' in sys.argv:
-    arrays = []
-    for n in chromosomes:
-        arrays.append(np.genfromtxt(missingnes_pattern.format(n), dtype='int8'))
-    bigarray = np.concatenate(tuple(ar for ar in arrays if ar.shape[0]), axis=0)
-    np.savetxt(big_file_name, bigarray, fmt='%1d')
-
 if '-sparse' in sys.argv:
-        new_labs = filter_sparse(big_file_name, big_file_name + '.filtered',
-                                 0.3, read_labs(labels_file))
+        new_labs = filter_sparse(missingnes_pattern, missingnes_pattern + '.filtered',
+                                 0.3, read_labs(labels_file + '.selected'))
         save_labs(new_labs, labels_file + '.filtered')
-
-if '-manual' in sys.argv:
-        new_labs = filter_manual(big_file_name + '.filtered', big_file_name + '.final',
-                                 ['CHI', 'BRI'], read_labs(labels_file + '.filtered'))
-        save_labs(new_labs, labels_file + '.final')
 
 if '-asd' in sys.argv:
     # TODO: avoid using big_file, refactor asd_main instead to read from list of files
-    asd_main(1, final_big_file, asd_pattern.format(1))
-    asd_main(2, final_big_file, asd_pattern.format(2))
+    asd_main(1, big_file_name, asd_pattern.format(1))
+    asd_main(2, big_file_name, asd_pattern.format(2))
 
 if '-analyze' in sys.argv:
     calc_mds(asd_pattern.format(1), vec_pattern.format(1))
     calc_mds(asd_pattern.format(2), vec_pattern.format(2))
-    T, L = find_T_and_L(vec_pattern.format(1))
-    K = find_K(vec_pattern.format(1), L)
+    T, L = find_T_and_L(vec_pattern.format(2))
+    K = find_K(vec_pattern.format(2), L)
     print('Number of clusters found:', K)
     labels, short_array, lambdas = perform_clustering(K,
                                                       vec_pattern.format(1),
-                                                      labels_file + '.final')
-    outgroup = '2'
+                                                      labels_file + '.filtered')
+    outgroup = '2'  # TODO: support outgroups in original format
     tree, ns, blocks = find_tree(K, asd_pattern.format(1), labels, short_array,
                                  outgroup)
     dists = find_distances(K, T, tree, ns, lambdas, blocks)

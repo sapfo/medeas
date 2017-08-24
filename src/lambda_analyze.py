@@ -47,15 +47,15 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
         """
         a = 2/T**2 * (1 - np.sqrt(N/L))**2
         b = 2/T**2 * (1 + np.sqrt(N/L))**2
-        if x <= a + 0.001:
+        if x <= a + 0.0001:
             return 0.0
-        if x >= b - 0.001:
+        if x >= b - 0.0001:
             return N * 1.0
-        return N * dens(x, a, b) / dens(b-0.001, a, b)
+        return N * dens(x, a, b) / dens(b-0.0001, a, b)
 
     # TODO: Fix this. Lambas should never be negative
-    #lambdas_s = np.array([max(l, 0.1) for l in lambdas_s])
-    lambdas_s = lambdas_s - lambdas_s.min() + 0.01
+    lambdas_s = np.array([max(l, 0.01) for l in lambdas_s])
+    #lambdas_s = lambdas_s - lambdas_s.min() + 0.0001
 
     popt, pcov = curve_fit(np.vectorize(dens_fit, otypes=[np.float]),
                            lambdas_s, range(len(lambdas_s)),

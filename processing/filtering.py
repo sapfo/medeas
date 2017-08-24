@@ -8,6 +8,10 @@ Created on Mon Jun 19 16:27:49 2017
 
 import numpy as np
 from typing import List
+import pickle
+
+chromosomes = range(1, 23)
+
 
 def process_chromosome(num: int) -> None:
     print(f'Started processing chromosome #{num}')
@@ -42,29 +46,43 @@ def set_missing(ancestry_file: str, infile: str, outfile: str,
     print("Processing file", ancestry_file)
     all_labels = np.array(all_labels)
     columns = np.where(all_labels == 'ABO')
-    full_data = np.genfromtxt(infile, dtype='int8')
-    ancestry = np.genfromtxt(ancestry_file, dtype='int8')
+    with open(infile, 'rb') as f:
+        full_data = pickle.load(f)
+    with open(ancestry_file, 'rb')as f:
+        ancestry = pickle.load(f)
     if ancestry.shape[0]: # guard for empty files
         for group in groups:
             is_not_ancestry = np.sign(ancestry - group) ** 2
             full_data.T[columns] = full_data.T[columns] * is_not_ancestry.T
-    np.savetxt(outfile, full_data, fmt='%1d')
+    with open(outfile, 'wb') as f:
+        pickle.dump(full_data, f)
 
-def filter_sparse(infile: str, outfile: str, ratio: float,
+def filter_sparse(infile_pattern: str, outfile_pattern: str, ratio: float,
                   labels: List[str]) -> 'np.ndarray[str]':
     labels = np.array(labels)
-    data = np.genfromtxt(infile, dtype='int8')
-    total = data.shape[0]
-    non_missing = np.sum(np.sign(data), axis=0)
+    total = 0
+    non_missing = None
+    for n in chromosomes:
+        print("First read: chromosome", n)
+        with open(infile_pattern.format(n), 'rb') as f:
+            data = pickle.load(f)
+        total += data.shape[0]
+        non_missing = (non_missing if non_missing is not None else
+                       np.zeros((data.shape[1],))) + np.sum(np.sign(data), axis=0)
     columns = np.where(non_missing > ratio * total)
-    data = data.T[columns].T
+    for n in chromosomes:
+        with open(infile_pattern.format(n), 'rb') as f:
+            data = pickle.load(f)
+        data = data.T[columns].T
+        print("Writing file: chromosome", n)
+        np.savetxt(outfile_pattern.format(n), data, fmt='%1d')
     labels = labels[columns]
-    np.savetxt(outfile, data, fmt='%1d')
     return labels
 
 def filter_manual(infile: str, outfile: str, pops: List[str],
                   labels: List[str]) -> 'np.ndarray[str]':
     short_labs = np.array([l.split()[0] for l in labels])
+    print(infile)
     print(short_labs)
     labels = np.array(labels)
     data = np.genfromtxt(infile, dtype='int8')
@@ -77,5 +95,6 @@ def filter_manual(infile: str, outfile: str, pops: List[str],
     data = data.T[columns].T
     labels = labels[columns]
     print(labels)
-    np.savetxt(outfile, data, fmt='%1d')
+    with open(outfile, 'wb') as f:
+        pickle.dump(data, f)
     return labels

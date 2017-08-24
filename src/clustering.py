@@ -245,4 +245,10 @@ def find_distances(npop, T, new_tree, ns, lambdas, blocks):
 
 # TODO: implement validations: positive values and order
 def validate_dists(dists, constraints):
+    for c in constraints:
+        if not dists[c[0]] < dists[c[1]]:
+            return False
+    for dist in dists:
+        if dist < 0:
+            return False
     return True

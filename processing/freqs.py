@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 
 from typing import Tuple
 from collections import defaultdict
+import pickle
 
 freqs = defaultdict(list)
 bars = defaultdict(list)
@@ -42,8 +43,10 @@ def calculate_freqs(pattern, outpattern):
     for group in range(1, 5):
         total_bars[group] = sum(bars[group], zero)
         total_freqs[group] = np.concatenate(tuple(freqs[group]))
-        np.savetxt(outpattern.format(group) + '.bars', total_bars[group], fmt='%d')
-        np.savetxt(outpattern.format(group) + '.freqs', total_freqs[group], fmt='%d')
+        with open(outpattern.format(group) + '.bars', 'wb') as f:
+            pickle.dump(total_bars[group], f)
+        with open(outpattern.format(group) + '.freqs', 'wb') as f:
+            pickle.dump(total_freqs[group], f)
 
 
 if __name__ == '__main__':
