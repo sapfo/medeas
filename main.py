@@ -60,13 +60,17 @@ def save_labs(labs: Iterable[str], file: str) -> None:
     with open(file, 'w') as f:
         return f.writelines(labs)
 
+# TODO: add options to read and write text files
+
 if '-recode' in sys.argv:
     def recode(n):
-        recode_wide(snps_pattern.format(n), snps_pattern_stped.format(n))
+        recode_wide(snps_pattern.format(n), snps_pattern_stped.format(n),
+                    ancestry_pattern.format(n),
+                    ancestry_pattern.format(n) + '.recoded')
     do(recode, 2)
 
 if '-freqs' in sys.argv:
-    calculate_freqs(ancestry_pattern, group_pattern)
+    calculate_freqs(ancestry_pattern + '.recoded', group_pattern)
 
 if '-manual' in sys.argv:
     for n in chromosomes:
@@ -78,7 +82,7 @@ if '-manual' in sys.argv:
 if '-filter' in sys.argv:
     mu, sigma = load_freqs(freqs_pattern)
     def filterf(n):
-        soft_filter(ancestry_pattern.format(n),
+        soft_filter(ancestry_pattern.format(n) + '.recoded',
                     snps_pattern_stped.format(n) + '.selected',
                     filtered_pattern.format(n),
                     filtered_ancestry_pattern.format(n), mu, sigma, 5),
@@ -109,9 +113,8 @@ if '-sparse' in sys.argv:
         save_labs(new_labs, labels_file + '.filtered')
 
 if '-asd' in sys.argv:
-    # TODO: avoid using big_file, refactor asd_main instead to read from list of files
-    asd_main(1, big_file_name, asd_pattern.format(1))
-    asd_main(2, big_file_name, asd_pattern.format(2))
+    asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1))
+    asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2))
 
 if '-analyze' in sys.argv:
     calc_mds(asd_pattern.format(1), vec_pattern.format(1))

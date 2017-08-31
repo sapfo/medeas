@@ -89,7 +89,7 @@ def process(data: 'np.ndarray[int]',
 
     return dists, norms
 
-def asd_main(pp, name, out_name):
+def asd_main(pp, name, out_name, txt_format=False):
     # On Windows, processes execute the whole file before forking
     # therefore we protect this code with if __name__ == '__main__'
     # Need to think how to avoid copying ``data`` on forking.
@@ -117,8 +117,12 @@ def asd_main(pp, name, out_name):
 
     # ---------- global data
 
-    with open(name) as f:
-        N = len(f.readline())//2
+    if txt_format:
+        with open(name) as f:
+             N = len(f.readline())//2
+    else:
+        with open(name.format(1), 'rb') as f:
+            N = pickle.load(f).shape[1]
 
     tot_dists = np.zeros((N, N))
     tot_norms = np.zeros((N, N))
@@ -126,18 +130,28 @@ def asd_main(pp, name, out_name):
     tasks = Queue()
     results = Queue()
 
-    f: IO[str]
-    with open(name) as f:
-        while True:
-            data_lines = f.readlines(MAXSIZE)
-            print('Chunk loading started')
-            if not data_lines:
-                break
-            data = np.array([np.fromstring(line, sep=' ',  # line[-cut:-1]
-                                           dtype='int8')
-                             for line in data_lines])
-            #data = data[:, ::2] + data[:, 1::2]
-            print('Chunk loaded')
+    f: IO
+    if txt_format:
+        with open(name) as f:
+            while True:
+                data_lines = f.readlines(MAXSIZE)
+                print('Chunk loading started')
+                if not data_lines:
+                    break
+                data = np.array([np.fromstring(line, sep=' ',  # line[-cut:-1]
+                                               dtype='int8')
+                                 for line in data_lines])
+                #data = data[:, ::2] + data[:, 1::2]
+                print('Chunk loaded')
+                data = data.T.copy()
+                dists, norms = process(data, dist_func, tasks, results, N)
+                tot_dists += dists
+                tot_norms += norms
+    else:
+        for n in range(1, 23):
+            with open(name.format(n), 'rb') as f:
+                data = pickle.load(f)
+            print(f'Loaded data for chromosome: {n}')
             data = data.T.copy()
             dists, norms = process(data, dist_func, tasks, results, N)
             tot_dists += dists

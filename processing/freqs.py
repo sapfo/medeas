@@ -20,7 +20,8 @@ bars = defaultdict(list)
 def process_chromosome(file: str) -> None:
     print(f'Started processing', file)
     
-    ancestry = np.genfromtxt(file, dtype='int8')
+    with open(file, 'rb') as f:
+        ancestry = pickle.load(f)
     print(f'Loaded ancestry from', file)
 
     group: int

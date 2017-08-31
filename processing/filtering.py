@@ -75,7 +75,8 @@ def filter_sparse(infile_pattern: str, outfile_pattern: str, ratio: float,
             data = pickle.load(f)
         data = data.T[columns].T
         print("Writing file: chromosome", n)
-        np.savetxt(outfile_pattern.format(n), data, fmt='%1d')
+        with open(outfile_pattern.format(n), 'wb') as f:
+            pickle.dump(data, f)
     labels = labels[columns]
     return labels
 
@@ -85,7 +86,8 @@ def filter_manual(infile: str, outfile: str, pops: List[str],
     print(infile)
     print(short_labs)
     labels = np.array(labels)
-    data = np.genfromtxt(infile, dtype='int8')
+    with open(infile, 'rb') as f:
+        data = pickle.load(f)
 
     mask = np.ones((data.shape[1],))
     for pop in pops:

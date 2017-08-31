@@ -24,7 +24,8 @@ def soft_filter(ancestry_file: str, snp_file: str, outfile: str, ancestry_outfil
                 mu, sigma, width: float) -> None:
 
     print(f'Started processing', ancestry_file)
-    ancestry = np.genfromtxt(ancestry_file, dtype='int8')
+    with open(ancestry_file, 'rb') as f:
+        ancestry = pickle.load(f)
     print(f'Loaded ancestry from', ancestry_file)
     with open(snp_file, 'rb') as f:
         snps = pickle.load(f)
