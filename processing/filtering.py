@@ -83,8 +83,7 @@ def filter_sparse(infile_pattern: str, outfile_pattern: str, ratio: float,
 def filter_manual(infile: str, outfile: str, pops: List[str],
                   labels: List[str]) -> 'np.ndarray[str]':
     short_labs = np.array([l.split()[0] for l in labels])
-    print(infile)
-    print(short_labs)
+    print('Manual drop: ', pops, infile)
     labels = np.array(labels)
     with open(infile, 'rb') as f:
         data = pickle.load(f)
@@ -96,7 +95,6 @@ def filter_manual(infile: str, outfile: str, pops: List[str],
 
     data = data.T[columns].T
     labels = labels[columns]
-    print(labels)
     with open(outfile, 'wb') as f:
         pickle.dump(data, f)
     return labels

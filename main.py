@@ -76,7 +76,7 @@ if '-manual' in sys.argv:
     for n in chromosomes:
         new_labs = filter_manual(snps_pattern_stped.format(n),
                                  snps_pattern_stped.format(n) + '.selected',
-                                 ['CHI', 'BRI'], read_labs(labels_file))
+                                 ['ABO', 'WCD'], read_labs(labels_file))
     save_labs(new_labs, labels_file + '.selected')
 
 if '-filter' in sys.argv:
@@ -94,7 +94,7 @@ if '-hard' in sys.argv:
                     hard_filtered_ancestry_pattern.format(n),
                     filtered_pattern.format(n),
                     hard_filtered_pattern.format(n),
-                    [4, 3], 0.1) # PAP or WCD
+                    [4, 3, 2, 1], 0.1) # PAP or WCD
     do(hardfilt)
 
 labs = np.array([l.split()[0] for l in read_labs(labels_file)])
@@ -104,7 +104,7 @@ if '-miss' in sys.argv:
         set_missing(hard_filtered_ancestry_pattern.format(n),
                     hard_filtered_pattern.format(n),
                     missingnes_pattern.format(n),
-                    labs, [1, 2])  # EUR and CHI
+                    labs, [])  # EUR and CHI
     do(setmiss)
 
 if '-sparse' in sys.argv:
@@ -122,12 +122,12 @@ if '-analyze' in sys.argv:
     T, L = find_T_and_L(vec_pattern.format(2))
     K = find_K(vec_pattern.format(2), L)
     print('Number of clusters found:', K)
-    labels, short_array, lambdas = perform_clustering(K,
+    labels, short_array, lambdas, res_labels = perform_clustering(K,
                                                       vec_pattern.format(1),
                                                       labels_file + '.filtered')
-    outgroup = '2'  # TODO: support outgroups in original format
+    outgroups = ['PAP']
     tree, ns, blocks = find_tree(K, asd_pattern.format(1), labels, short_array,
-                                 outgroup)
+                                 outgroups, res_labels)
     dists = find_distances(K, T, tree, ns, lambdas, blocks)
     print('Found distances:', dists)
 

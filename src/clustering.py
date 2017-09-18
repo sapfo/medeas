@@ -8,7 +8,8 @@ from skbio.tree import nj, TreeNode
 
 from scipy.optimize import least_squares  # root
 
-from typing import Tuple
+from typing import Tuple, List
+from collections import Counter
 
 OFFSET = 2
 TESTING = True
@@ -28,15 +29,14 @@ def perform_clustering(npop, vectors_file, labels_file):
 
     for (i, l) in enumerate(labels.copy()):
         if l == 'ABO':
-            labels[i] = labels_d[i]  # TODO: move this logic to main.py
+            labels[i] = labels_d[i]  # TODO: maybe move this logic to main.py
+                                     # or a separate function?
 
     colormap = {
-            'CAI': '#2679B2',
-            'WPA': '#CAB3D5',
-
+    'CAI': '#2679B2',
+    'WPA': '#CAB3D5',
     'BDV': '#A7CEE2',
     'RIV': '#E01F27',
-
     'WCD': '#FCBE75',
     'WON': '#FD7F23',
     'ENY': '#B3DE8E',
@@ -47,22 +47,13 @@ def perform_clustering(npop, vectors_file, labels_file):
     'PAP': 'red'
             }  # TODO: Autogenerate colormap
 
-    ######
-    labels0 = np.array([l.split()[0] for l in lines])
-
-    where = np.where(np.logical_or(labels0 == 'ABO', labels0 == 'WCD'))[0]
-    # TODO: move the above logic to main.py
-
-    labels = np.array(labels)[where]
-    ######
-
     colors = [colormap[l].lower() for l in labels]
+    res_labels = labels.copy()
 
     arr = np.hstack((lambdas.reshape((N, 1)), vecs.T)).copy()
     arr = sorted(arr, key=lambda x: x[0], reverse=True)
     for i, v in enumerate(arr.copy()):
         arr[i] = np.sqrt(v[0])*v[1:]
-
 
     print(len(arr))
     arr = arr[:npop+OFFSET]
@@ -79,14 +70,25 @@ def perform_clustering(npop, vectors_file, labels_file):
         fig, ax = plt.subplots()
         ax.scatter(arr.T[p], arr.T[q], c=colors, s=100)
         for i, txt in enumerate(labels):
-            ax.annotate(txt, (arr.T[p, i], arr.T[q, i]))
+            ax.annotate(lines[i].split()[1], (arr.T[p, i], arr.T[q, i]))
         fig.savefig(f'whatever{p}{q}.svg')
 
     plt.show()
-    return labs, arr, lambdas
+    print('HERE!!!', np.array(lines)[np.where(labs == 1)])
+    print('HERE!!!', np.array(lines)[[6, 7]])
+    return labs, arr, lambdas, res_labels
 
-def find_tree(npop, asd_file, labs, arr, outgroup: str
+def find_tree(npop, asd_file, labs, arr, outgroups: List[str], res_labels: List[str]
               ) -> Tuple[TreeNode, 'np.ndarray[int]', 'np.ndarray[float]']:
+
+    res_labels = np.array(res_labels)
+    cond_lab = np.zeros(labs.shape)
+    for outg in outgroups:
+        cond_lab = np.logical_or(cond_lab, res_labels == outg)
+    outg_labs = labs[np.where(cond_lab)]
+    count = Counter(outg_labs)
+    outgroup = count.most_common()[0][0]
+    outgroup = hex(outgroup)[-1].upper()
 
     with open(asd_file, 'rb') as f:
         delta = pickle.load(f)

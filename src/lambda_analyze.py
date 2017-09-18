@@ -54,7 +54,7 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
         return N * dens(x, a, b) / dens(b-0.0001, a, b)
 
     # TODO: Fix this. Lambas should never be negative
-    lambdas_s = np.array([max(l, 0.01) for l in lambdas_s])
+    #lambdas_s = np.array([max(l, 0.01) for l in lambdas_s])
     #lambdas_s = lambdas_s - lambdas_s.min() + 0.0001
 
     popt, pcov = curve_fit(np.vectorize(dens_fit, otypes=[np.float]),
@@ -78,8 +78,9 @@ def find_K(file, L):
     with open(file, 'rb') as f:
         lambdas, vecs = pickle.load(f)
 
-    lambdas0 = lambdas.copy()
     N = len(lambdas)
+    lambdas = list(sorted(lambdas, reverse=True))
+    lambdas0 = np.array(lambdas)
 
     s1 = np.sum(lambdas0)
     s2 = np.sum(lambdas0**2)
@@ -98,7 +99,7 @@ def find_K(file, L):
         lambdas = lambdas[1:]
 
     if TESTING:
-        lambdas = list(sorted(lambdas, reverse=True))
+        lambdas = list(sorted(lambdas0, reverse=True))
         lambdas = np.array(lambdas)
         plt.figure()
         plt.plot(lambdas, 'b.')
