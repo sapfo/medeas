@@ -5,6 +5,8 @@ import pickle
 
 from skbio import DistanceMatrix
 from skbio.tree import nj, TreeNode
+from io import StringIO
+from skbio import read
 
 from scipy.optimize import least_squares  # root
 
@@ -12,7 +14,7 @@ from typing import Tuple, List
 from collections import Counter
 
 OFFSET = 2
-TESTING = True
+from options import TESTING
 
 def perform_clustering(npop, vectors_file, labels_file):
 
@@ -65,17 +67,16 @@ def perform_clustering(npop, vectors_file, labels_file):
     labs = clusterer.fit_predict(arr)
     labels = [hex(l)[-1].upper() for l in labs]
 
-    # TODO: autogenerate nice summary plot depending on 'npop'
-    for p, q in [(0, 1), (0, 2), (1, 2), (0, 3), (1, 3), (2, 3)]:
-        fig, ax = plt.subplots()
-        ax.scatter(arr.T[p], arr.T[q], c=colors, s=100)
-        for i, txt in enumerate(labels):
-            ax.annotate(lines[i].split()[1], (arr.T[p, i], arr.T[q, i]))
-        fig.savefig(f'whatever{p}{q}.svg')
+    if TESTING:
+        # TODO: autogenerate nice summary plot depending on 'npop'
+        for p, q in [(0, 1), (0, 2), (1, 2), (0, 3), (1, 3), (2, 3)]:
+            fig, ax = plt.subplots()
+            ax.scatter(arr.T[p], arr.T[q], c=colors, s=100)
+            for i, txt in enumerate(labels):
+                ax.annotate(txt, (arr.T[p, i], arr.T[q, i]))
+            fig.savefig(f'whatever{p}{q}.svg')
 
-    plt.show()
-    print('HERE!!!', np.array(lines)[np.where(labs == 1)])
-    print('HERE!!!', np.array(lines)[[6, 7]])
+        plt.show()
     return labs, arr, lambdas, res_labels
 
 def find_tree(npop, asd_file, labs, arr, outgroups: List[str], res_labels: List[str]
@@ -115,12 +116,15 @@ def find_tree(npop, asd_file, labs, arr, outgroups: List[str], res_labels: List[
             ds[i, j] = np.sqrt(np.sum((coords[i] - coords[j])**2))
 
     print(ds)
-    plt.pcolor(ds)
-    plt.show()
+    if TESTING:
+        plt.pcolor(ds)
+        plt.show()
 
     ids = list(map(str, range(npop)))
     dm = DistanceMatrix(ds, ids)
-
+    if npop == 2:
+        tree = read(StringIO('(0:0.1, 1:0.1);'), format='newick', into=TreeNode)
+        return tree, ns, blocks
     tree = nj(dm)
 
     rt = TreeNode(name='rt')

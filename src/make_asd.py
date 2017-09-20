@@ -11,7 +11,8 @@ from multiprocessing import Process, Queue, cpu_count
 from typing import Tuple, Callable, List, IO
 import pickle
 
-TESTING = False
+from options import TESTING
+
 NPROC = cpu_count()
 
 if TESTING:

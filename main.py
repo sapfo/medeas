@@ -8,11 +8,15 @@ Created on Mon Jul 10 12:20:25 2017
 
 # TODO: use argparse and/or config file
 
+import options
+options.TESTING = False
+
 from typing import List, Iterable
 
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from skbio.tree import TreeNode
 
 from src.make_asd import asd_main
 from src.mds import calc_mds
@@ -113,8 +117,10 @@ if '-sparse' in sys.argv:
         save_labs(new_labs, labels_file + '.filtered')
 
 if '-asd' in sys.argv:
-    asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1))
-    asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2))
+    asd_main(1, '/Users/ivan/scrm/tmpres.txt', asd_pattern.format(1), txt_format=True)
+    asd_main(2, '/Users/ivan/scrm/tmpres.txt', asd_pattern.format(2), txt_format=True)
+    # asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1))
+    # asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2))
 
 if '-analyze' in sys.argv:
     calc_mds(asd_pattern.format(1), vec_pattern.format(1))
@@ -124,10 +130,11 @@ if '-analyze' in sys.argv:
     print('Number of clusters found:', K)
     labels, short_array, lambdas, res_labels = perform_clustering(K,
                                                       vec_pattern.format(1),
-                                                      labels_file + '.filtered')
+                                                      '/Users/ivan/scrm/fake_labs.txt') #labels_file + '.filtered')
     outgroups = ['PAP']
     tree, ns, blocks = find_tree(K, asd_pattern.format(1), labels, short_array,
                                  outgroups, res_labels)
+
     dists = find_distances(K, T, tree, ns, lambdas, blocks)
     print('Found distances:', dists)
 
