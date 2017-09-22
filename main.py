@@ -9,7 +9,7 @@ Created on Mon Jul 10 12:20:25 2017
 # TODO: use argparse and/or config file
 
 import options
-options.TESTING = False
+options.TESTING = True
 
 from typing import List, Iterable
 

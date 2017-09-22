@@ -10,8 +10,8 @@ def dens(x: float, a: float, b: float) -> float:
     """Integral of Marchenko-Pastur distribution function on interval
     a < x < b.
     """
-    arc1 = np.arcsin((2*x - a - b)/(b - a)/1.0001)
-    arc2 = np.arcsin(((a+b)*x-2*a*b)/x/(b - a)/1.0001)
+    arc1 = np.arcsin((2*x - a - b)/(b - a)/1.00001)
+    arc2 = np.arcsin(((a+b)*x-2*a*b)/x/(b - a)/1.00001)
     res = (np.sqrt((b-x)*(x-a))
             + (a+b)*arc1/2
             - np.sqrt(a*b)*arc2
@@ -27,7 +27,7 @@ def find_TW(lambdas: Sequence[float], L: float) -> float:
     n = int(L)
     mu = (np.sqrt(n - 1) + np.sqrt(m))**2 / n
     sigma = (1/np.sqrt(n-1) + 1/np.sqrt(m))**(1/3) * (np.sqrt(n - 1) + np.sqrt(m)) / n
-    l = m*lambdas[0]/np.sum(lambdas)
+    l = (m-1)*lambdas[0]/np.sum(lambdas)
     print(l, mu, sigma)
     s = (l - mu) / sigma
     return s
@@ -50,16 +50,13 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
         if x <= a:
             return 0.0
         if x >= b:
-            return N * 1.0
-        return N * dens(x, a, b) / dens(b, a, b)
-
-    # TODO: Fix this. Lambas should never be negative
-    #lambdas_s = np.array([max(l, 0.01) for l in lambdas_s])
-    #lambdas_s = lambdas_s - lambdas_s.min() + 0.0001
+            return (N-1) * 1.0
+        return (N-1) * dens(x, a, b) / dens(b, a, b)
 
     popt, pcov = curve_fit(np.vectorize(dens_fit, otypes=[np.float]),
                            lambdas_s, range(len(lambdas_s)),
                            p0 = (1, N+1), bounds=([0.1, N], [10, 1000*N]))
+    # popt[1] = 2000
     if TESTING:
         plt.plot(lambdas_s, range(len(lambdas_s)))
         lambdas_se = np.linspace(lambdas.min(), lambdas.max(), 5000)

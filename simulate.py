@@ -35,4 +35,4 @@ def run_simulation_two_pops(n1: int, n2: int, L: int, theta: float, D: float):
                     '-analyze'], stdout=sys.stdout)
     medeas.communicate()
     
-run_simulation_two_pops(30, 70, 100, 1, 0.1)
+run_simulation_two_pops(30, 70, 200, 1, 0.1)

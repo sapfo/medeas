@@ -27,7 +27,8 @@ with open(sys.argv[2], 'w') as f:
     for block in blocks:
         for snp in range(len(block[0])):
             for ind in range(n):
-                f.write(block[ind][snp])
+                s = block[ind][snp]
+                f.write(str(int(s) + 1))
                 if ind < n - 1:
                     f.write(' ')
             f.write('\n')

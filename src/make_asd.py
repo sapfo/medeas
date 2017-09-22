@@ -28,7 +28,7 @@ def dist_and_norm(a: 'np.ndarray[int]', b: 'np.ndarray[int]',
     Norm is number of sites 'i' where both 'a[i]' and 'b[i]' are non-zero.
     Other sites does not contribute to distance.
     """
-    filt = np.ones(a.shape) # np.logical_and(a, b)
+    filt = np.logical_and(a, b)
     dst = filt * dist_func(a-b)
     return np.sum(dst), np.sum(filt)
 
