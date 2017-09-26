@@ -9,7 +9,7 @@ Created on Mon Jul 10 12:20:25 2017
 # TODO: use argparse and/or config file
 
 import options
-options.TESTING = True
+options.TESTING = False
 
 from typing import List, Iterable
 
@@ -126,8 +126,12 @@ if '-analyze' in sys.argv:
     calc_mds(asd_pattern.format(1), vec_pattern.format(1))
     calc_mds(asd_pattern.format(2), vec_pattern.format(2))
     T, L = find_T_and_L(vec_pattern.format(2))
-    K = find_K(vec_pattern.format(2), L)
+    K = find_K(vec_pattern.format(2), L, T)
     print('Number of clusters found:', K)
+    K_over = 2
+    if K_over:
+        print(f'OVERRIDING WITH: K = {K_over}')
+        K = K_over
     labels, short_array, lambdas, res_labels = perform_clustering(K,
                                                       vec_pattern.format(1),
                                                       '/Users/ivan/scrm/fake_labs.txt') #labels_file + '.filtered')
@@ -135,8 +139,22 @@ if '-analyze' in sys.argv:
     tree, ns, blocks = find_tree(K, asd_pattern.format(1), labels, short_array,
                                  outgroups, res_labels)
 
-    dists = find_distances(K, T, tree, ns, lambdas, blocks)
-    print('Found distances:', dists)
+    res = []
+    for _ in range(min(10 + 2**K, 100)):
+        dists, constraints = find_distances(K, T, tree, ns, lambdas, blocks)
+        print('Found distances:', dists.x)
+        if validate_dists(dists.x, constraints):
+            print('OK')
+            res.append(dists.x)
+        else:
+            print('Invalid')
+    if res:
+        Dst = np.mean([d[0] for d in res])
+        delta_Dst = np.std([d[0] for d in res])
+    else:
+        Dst = delta_Dst = 0
+    with open('res8.txt', 'a') as f:
+        f.write(f' {Dst} {delta_Dst} {K} {T} {L}\n')
 
 # TODO: Implement statistical bootstrap
 # TODO: Refactor main into four parts: actual main, prepare.py, single_pass.py, bootstrap.py

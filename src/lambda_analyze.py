@@ -19,7 +19,7 @@ def dens(x: float, a: float, b: float) -> float:
     return res
 
 
-def find_TW(lambdas: Sequence[float], L: float) -> float:
+def find_TW(lambdas: Sequence[float], L: float, T: float, N: int) -> float:
     """Find Tracy-Widom statistics for the highest (first) eigenvalue
     among 'lambdas'.
     """
@@ -27,8 +27,9 @@ def find_TW(lambdas: Sequence[float], L: float) -> float:
     n = int(L)
     mu = (np.sqrt(n - 1) + np.sqrt(m))**2 / n
     sigma = (1/np.sqrt(n-1) + 1/np.sqrt(m))**(1/3) * (np.sqrt(n - 1) + np.sqrt(m)) / n
-    l = (m-1)*lambdas[0]/np.sum(lambdas)
+    l = lambdas[0] * T**2/2 # * m/np.sum(lambdas)
     print(l, mu, sigma)
+    print(T**2/2, m/np.sum(lambdas))
     s = (l - mu) / sigma
     return s
 
@@ -70,7 +71,7 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
 # Tracy-Widom
 # ====================
 
-def find_K(file, L):
+def find_K(file, L, T):
 
     with open(file, 'rb') as f:
         lambdas, vecs = pickle.load(f)
@@ -90,7 +91,7 @@ def find_K(file, L):
     s = 5
     i = 1
     while s > 3.2724:  # for p-value 0.001
-        s = find_TW(lambdas, L)
+        s = find_TW(lambdas, L, T, N)
         print(f'eigenvalue {i}: TW = {s}')
         i += 1
         lambdas = lambdas[1:]

@@ -12,6 +12,7 @@ from scipy.optimize import least_squares  # root
 
 from typing import Tuple, List
 from collections import Counter
+from random import uniform
 
 OFFSET = 2
 from options import TESTING
@@ -228,6 +229,8 @@ def find_distances(npop, T, new_tree, ns, lambdas, blocks):
     inits = T*inits/2 - 1
     mins = T*mins/2 - 1
     maxs = T*maxs/2 - 1
+    for i, (mn, mx) in enumerate(zip(mins, maxs)):
+        inits[i] = uniform(mn, mx)
 
     if TESTING:
         print('Inits:', inits)
@@ -247,14 +250,21 @@ def find_distances(npop, T, new_tree, ns, lambdas, blocks):
 
     # TODO: find more solutions for D using different initial points (grid(-) or random(+))
     res = least_squares(dev, inits, bounds=(mins, maxs), gtol=1e-15)
-    return res
+    return res, constraints
 
 # TODO: implement validations: positive values and order
 def validate_dists(dists, constraints):
     for c in constraints:
-        if not dists[c[0]] < dists[c[1]]:
+        if not smaller(dists[c[0]], dists[c[1]]):
             return False
     for dist in dists:
-        if dist < 0:
+        if dist < -0.01:
             return False
     return True
+
+def smaller(x, y):
+    if x - y < 0.01:
+        return True
+    if x/y < 1.1:
+        return True
+    return False

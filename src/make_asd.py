@@ -10,15 +10,12 @@ import numpy as np
 from multiprocessing import Process, Queue, cpu_count
 from typing import Tuple, Callable, List, IO
 import pickle
+from random import randint
+import matplotlib.pyplot as plt
 
 from options import TESTING
 
 NPROC = cpu_count()
-
-if TESTING:
-    import matplotlib.pyplot as plt
-
-# N = 270  # 66  # 294
 
 
 def dist_and_norm(a: 'np.ndarray[int]', b: 'np.ndarray[int]',
@@ -39,7 +36,8 @@ def compute(i: int, data: 'np.ndarray[int]',
     """Compute all distances and norms for 'i'th row in 'data'."""
     dists: List[float] = []
     norms: List[int] = []
-    print(f'Processing row #{i}')
+    if TESTING:
+        print(f'Processing row #{i}')
     for j in range(i+1, N):
         dist, norm = dist_and_norm(data[i], data[j], dist_func)
         dists.append(dist)
@@ -115,6 +113,8 @@ def asd_main(pp, name, out_name, txt_format=False):
     # this should be large to avoid overhead of spawning new processes
     # or we need to reuse them somehow
     MAXSIZE = 200*2**20  # 200 MB
+    BOOTSIZE = 120
+    BOOTRUNS = 10
 
     # ---------- global data
 
@@ -132,6 +132,26 @@ def asd_main(pp, name, out_name, txt_format=False):
     results = Queue()
 
     f: IO
+    chunk_data: List[Tuple['np.ndarray[float]', 'np.ndarray[float]']] = []
+    remainder = None  # np.zeros((1, N))
+    def process_chunks(data) -> None:
+        nonlocal remainder, tot_dists, tot_norms
+        start_i = 0
+        end_i = BOOTSIZE - len(remainder) if remainder else BOOTSIZE
+        while end_i < len(data):
+            print(f'Processing site {start_i}')
+            chunk = data[start_i:end_i]
+            if remainder and start_i == 0:
+                chunk = np.vstack((remainder, chunk))
+            datac = chunk.T.copy()
+            dists, norms = process(datac, dist_func, tasks, results, N)
+            tot_dists += dists
+            tot_norms += norms
+            chunk_data.append((dists, norms))
+            start_i += BOOTSIZE
+            end_i = start_i + BOOTSIZE
+        remainder = data[start_i:]
+
     if txt_format:
         with open(name) as f:
             while True:
@@ -144,19 +164,14 @@ def asd_main(pp, name, out_name, txt_format=False):
                                  for line in data_lines])
                 #data = data[:, ::2] + data[:, 1::2]
                 print('Chunk loaded')
-                data = data.T.copy()
-                dists, norms = process(data, dist_func, tasks, results, N)
-                tot_dists += dists
-                tot_norms += norms
+                process_chunks(data)
+
     else:
         for n in range(1, 23):
             with open(name.format(n), 'rb') as f:
                 data = pickle.load(f)
             print(f'Loaded data for chromosome: {n}')
-            data = data.T.copy()
-            dists, norms = process(data, dist_func, tasks, results, N)
-            tot_dists += dists
-            tot_norms += norms
+            process_chunks(data)
 
     for i in range(N):
         delta[i, i] = 0
@@ -165,8 +180,31 @@ def asd_main(pp, name, out_name, txt_format=False):
         for j in range(i+1, N):
             delta[i, j] = delta[j, i] = tot_dists[i, j]/tot_norms[i, j]
     delta = delta**(1/pp)
+    if TESTING:
+        plt.pcolor(delta)
+        plt.show()
     with open(out_name, 'wb') as f:
         pickle.dump(delta, f)
+
+    # bootstraping ---------------
+
+    clen = len(chunk_data)
+    for boot in range(BOOTRUNS):
+        chunk_res = chunk_data.copy()
+        for i in range(clen):
+            chunk_res[i] = chunk_data[randint(0, clen - 1)]
+        delta = np.zeros((N, N))
+        tot_dists = np.sum(np.array([c[0] for c in chunk_res]), axis=0)
+        tot_norms = np.sum(np.array([c[1] for c in chunk_res]), axis=0)
+        for i in range(N):
+            for j in range(i+1, N):
+                delta[i, j] = delta[j, i] = tot_dists[i, j]/tot_norms[i, j]
+        delta = delta**(1/pp)
+        if TESTING:
+            plt.pcolor(delta)
+            plt.show()
+        with open(out_name + f'.boot.{boot}', 'wb') as f:
+            pickle.dump(delta, f)
 
     print('Distance matrix computed')
     if TESTING:
