@@ -10,6 +10,7 @@ Created on Mon Jul 10 12:20:25 2017
 
 import options
 options.TESTING = False
+options.BOOTRUNS = BOOTRUNS = 10
 
 from typing import List, Iterable
 
@@ -124,6 +125,9 @@ if '-asd' in sys.argv:
 
 if '-analyze' in sys.argv:
     calc_mds(asd_pattern.format(1), vec_pattern.format(1))
+    for boot in range(BOOTRUNS):
+        suffix = f'.boot.{boot}'
+        calc_mds(asd_pattern.format(1) + suffix, vec_pattern.format(1) + suffix)
     calc_mds(asd_pattern.format(2), vec_pattern.format(2))
     T, L = find_T_and_L(vec_pattern.format(2))
     K = find_K(vec_pattern.format(2), L, T)
@@ -132,22 +136,28 @@ if '-analyze' in sys.argv:
     if K_over:
         print(f'OVERRIDING WITH: K = {K_over}')
         K = K_over
-    labels, short_array, lambdas, res_labels = perform_clustering(K,
-                                                      vec_pattern.format(1),
-                                                      '/Users/ivan/scrm/fake_labs.txt') #labels_file + '.filtered')
-    outgroups = ['PAP']
-    tree, ns, blocks = find_tree(K, asd_pattern.format(1), labels, short_array,
-                                 outgroups, res_labels)
 
     res = []
-    for _ in range(min(10 + 2**K, 100)):
-        dists, constraints = find_distances(K, T, tree, ns, lambdas, blocks)
-        print('Found distances:', dists.x)
-        if validate_dists(dists.x, constraints):
-            print('OK')
-            res.append(dists.x)
-        else:
-            print('Invalid')
+    def run_once(boot: int) -> None:
+        suffix = '' if boot == -1 else f'.boot.{boot}'
+
+        labels, short_array, lambdas, res_labels = perform_clustering(K,
+                                                          vec_pattern.format(1) + suffix,
+                                                          '/Users/ivan/scrm/fake_labs.txt') #labels_file + '.filtered')
+        outgroups = ['PAP']
+        tree, ns, blocks = find_tree(K, asd_pattern.format(1) + suffix, labels, short_array,
+                                     outgroups, res_labels)
+
+        for _ in range(min(10 + 2**K, 100)):
+            dists, constraints = find_distances(K, T, tree, ns, lambdas, blocks)
+            print('Found distances:', dists.x)
+            if validate_dists(dists.x, constraints):
+                print('OK')
+                res.append(dists.x)
+            else:
+                print('Invalid')
+    for boot in range(-1, BOOTRUNS):
+        run_once(boot)
     if res:
         Dst = np.mean([d[0] for d in res])
         delta_Dst = np.std([d[0] for d in res])

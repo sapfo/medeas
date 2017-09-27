@@ -14,6 +14,7 @@ from random import randint
 import matplotlib.pyplot as plt
 
 from options import TESTING
+from options import BOOTRUNS
 
 NPROC = cpu_count()
 
@@ -114,7 +115,6 @@ def asd_main(pp, name, out_name, txt_format=False):
     # or we need to reuse them somehow
     MAXSIZE = 200*2**20  # 200 MB
     BOOTSIZE = 120
-    BOOTRUNS = 10
 
     # ---------- global data
 

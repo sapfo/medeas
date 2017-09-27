@@ -64,8 +64,10 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
         l_dens_fit = [dens_fit(l, *popt) for l in lambdas_se]
         plt.plot(lambdas_se, l_dens_fit)
         plt.show()
-    print('FIT: ', popt, pcov)
-    return popt
+    p_err = np.sqrt(np.diag(pcov))
+    print('FIT: ', popt, p_err)
+    return popt[0], popt[1] - p_err[1]  # Take L 1σ lower to compensate
+                                        # for tendency to overestimate
 
 # ====================
 # Tracy-Widom

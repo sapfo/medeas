@@ -44,9 +44,9 @@ def run_simulation_two_pops(n1: int, n2: int, L: int, theta: float, D: float):
 if TWO_POPS:
 
     Ls = np.logspace(2, 5, num=100)
-    Ls2 = [1000, 300]
+    Ls2 = [300, 1000]
 
-    for D in [0.1, 0.02]:
+    for D in [0.02, 0.01]:
         for L in Ls2:
             for _ in range(10):
                 run_simulation_two_pops(30, 70, int(L), 1, D)
