@@ -14,7 +14,7 @@ TWO_POPS = True
 
 def run_simulation_two_pops(n1: int, n2: int, L: int, theta: float, D: float):
 
-    with open('res8.txt', 'a') as f:
+    with open('res10.txt', 'a') as f:
         f.write(f'{L} {2*D}')
 
     scrm = Popen(f'../scrm/scrm {n1+n2} {L} -t {theta} -I 2 {n1} {n2} -ej {D} 1 2'

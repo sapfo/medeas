@@ -8,6 +8,8 @@ Created on Mon Jul 10 12:20:25 2017
 
 # TODO: use argparse and/or config file
 
+SIMULATION = False
+
 import options
 options.TESTING = False
 options.BOOTRUNS = BOOTRUNS = 10
@@ -118,10 +120,12 @@ if '-sparse' in sys.argv:
         save_labs(new_labs, labels_file + '.filtered')
 
 if '-asd' in sys.argv:
-    asd_main(1, '/Users/ivan/scrm/tmpres.txt', asd_pattern.format(1), txt_format=True)
-    asd_main(2, '/Users/ivan/scrm/tmpres.txt', asd_pattern.format(2), txt_format=True)
-    # asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1))
-    # asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2))
+    if SIMULATION:
+        asd_main(1, '/Users/ivan/scrm/tmpres.txt', asd_pattern.format(1), txt_format=True)
+        asd_main(2, '/Users/ivan/scrm/tmpres.txt', asd_pattern.format(2), txt_format=True)
+    else:
+        asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1))
+        asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2))
 
 if '-analyze' in sys.argv:
     calc_mds(asd_pattern.format(1), vec_pattern.format(1))
@@ -132,18 +136,22 @@ if '-analyze' in sys.argv:
     T, L = find_T_and_L(vec_pattern.format(2))
     K = find_K(vec_pattern.format(2), L, T)
     print('Number of clusters found:', K)
-    K_over = 2
+    K_over = 0
     if K_over:
         print(f'OVERRIDING WITH: K = {K_over}')
         K = K_over
 
     res = []
+    if SIMULATION:
+        new_labels_file = '/Users/ivan/scrm/fake_labs.txt'
+    else:
+        new_labels_file =  labels_file + '.filtered'
     def run_once(boot: int) -> None:
         suffix = '' if boot == -1 else f'.boot.{boot}'
 
         labels, short_array, lambdas, res_labels = perform_clustering(K,
                                                           vec_pattern.format(1) + suffix,
-                                                          '/Users/ivan/scrm/fake_labs.txt') #labels_file + '.filtered')
+                                                          new_labels_file)
         outgroups = ['PAP']
         tree, ns, blocks = find_tree(K, asd_pattern.format(1) + suffix, labels, short_array,
                                      outgroups, res_labels)
@@ -163,7 +171,7 @@ if '-analyze' in sys.argv:
         delta_Dst = np.std([d[0] for d in res])
     else:
         Dst = delta_Dst = 0
-    with open('res8.txt', 'a') as f:
+    with open('res10.txt', 'a') as f:
         f.write(f' {Dst} {delta_Dst} {K} {T} {L}\n')
 
 # TODO: Implement statistical bootstrap

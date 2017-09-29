@@ -114,7 +114,7 @@ def asd_main(pp, name, out_name, txt_format=False):
     # this should be large to avoid overhead of spawning new processes
     # or we need to reuse them somehow
     MAXSIZE = 200*2**20  # 200 MB
-    BOOTSIZE = 120
+    BOOTSIZE = 40000
 
     # ---------- global data
 
@@ -137,11 +137,11 @@ def asd_main(pp, name, out_name, txt_format=False):
     def process_chunks(data) -> None:
         nonlocal remainder, tot_dists, tot_norms
         start_i = 0
-        end_i = BOOTSIZE - len(remainder) if remainder else BOOTSIZE
+        end_i = BOOTSIZE - len(remainder) if remainder is not None else BOOTSIZE
         while end_i < len(data):
             print(f'Processing site {start_i}')
             chunk = data[start_i:end_i]
-            if remainder and start_i == 0:
+            if remainder is not None and start_i == 0:
                 chunk = np.vstack((remainder, chunk))
             datac = chunk.T.copy()
             dists, norms = process(datac, dist_func, tasks, results, N)
@@ -189,6 +189,7 @@ def asd_main(pp, name, out_name, txt_format=False):
     # bootstraping ---------------
 
     clen = len(chunk_data)
+    print(f'NUMBER OF BLOCKS: {clen}')
     for boot in range(BOOTRUNS):
         chunk_res = chunk_data.copy()
         for i in range(clen):

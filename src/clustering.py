@@ -48,7 +48,7 @@ def perform_clustering(npop, vectors_file, labels_file):
     'CHI': 'black',
     'BRI': 'blue',
     'PAP': 'red'
-            }  # TODO: Autogenerate colormap
+    }  # TODO: Autogenerate colormap
 
     colors = [colormap[l].lower() for l in labels]
     res_labels = labels.copy()
