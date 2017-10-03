@@ -13,13 +13,14 @@ import matplotlib.pyplot as plt
 from typing import Tuple
 from collections import defaultdict
 import pickle
+from options import TESTING
 
 freqs = defaultdict(list)
 bars = defaultdict(list)
 
 def process_chromosome(file: str) -> None:
     print(f'Started processing', file)
-    
+
     with open(file, 'rb') as f:
         ancestry = pickle.load(f)
     print(f'Loaded ancestry from', file)
@@ -49,20 +50,16 @@ def calculate_freqs(pattern, outpattern):
         with open(outpattern.format(group) + '.freqs', 'wb') as f:
             pickle.dump(total_freqs[group], f)
 
+    if TESTING:
+        bins = np.arange(0.5, 119.5, 1)
+        colors = ['black', 'blue', 'green', 'red']
+        for group in range(1, 5):
+            plt.hist(total_freqs[group], bins=bins, color=colors[group-1])
 
-if __name__ == '__main__':
-    print('Plotting........')
-
-    bins = np.arange(0.5, 119.5, 1)
-    colors = ['black', 'blue', 'green', 'red']
-    for group in range(1, 5):
-        plt.hist(total_freqs[group], bins=bins, color=colors[group-1])
-
-    plt.figure()
-    width = 0.5
-    for group in range(1, 5):
-        plt.bar(np.arange(118), total_bars[group], width=width,
-                bottom = sum((total_bars[g] for g in range(1, group)), zero),
-                color=colors[group-1])
-
-    plt.show()
+        plt.figure()
+        width = 0.5
+        for group in range(1, 5):
+            plt.bar(np.arange(118), total_bars[group], width=width,
+                    bottom = sum((total_bars[g] for g in range(1, group)), zero),
+                    color=colors[group-1])
+        plt.show()

@@ -89,8 +89,9 @@ def find_tree(npop, asd_file, labs, arr, outgroups: List[str], res_labels: List[
         cond_lab = np.logical_or(cond_lab, res_labels == outg)
     outg_labs = labs[np.where(cond_lab)]
     count = Counter(outg_labs)
-    outgroup = count.most_common()[0][0]
-    outgroup = hex(outgroup)[-1].upper()
+    if outg_labs:
+        outgroup = count.most_common()[0][0]
+        outgroup = hex(outgroup)[-1].upper()
 
     with open(asd_file, 'rb') as f:
         delta = pickle.load(f)

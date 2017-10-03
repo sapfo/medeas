@@ -12,6 +12,7 @@ SIMULATION = False
 
 import options
 options.TESTING = False
+options.FST = True
 options.BOOTRUNS = BOOTRUNS = 10
 
 from typing import List, Iterable
@@ -83,7 +84,7 @@ if '-manual' in sys.argv:
     for n in chromosomes:
         new_labs = filter_manual(snps_pattern_stped.format(n),
                                  snps_pattern_stped.format(n) + '.selected',
-                                 ['ABO', 'WCD'], read_labs(labels_file))
+                                 ['ABO', 'WCD', 'PAP'], read_labs(labels_file))
     save_labs(new_labs, labels_file + '.selected')
 
 if '-filter' in sys.argv:
@@ -136,7 +137,7 @@ if '-analyze' in sys.argv:
     T, L = find_T_and_L(vec_pattern.format(2))
     K = find_K(vec_pattern.format(2), L, T)
     print('Number of clusters found:', K)
-    K_over = 0
+    K_over = 2
     if K_over:
         print(f'OVERRIDING WITH: K = {K_over}')
         K = K_over
