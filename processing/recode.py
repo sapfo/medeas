@@ -9,10 +9,11 @@ Created on Mon Jul 10 14:28:40 2017
 import numpy as np
 import pickle
 
+
 def recode_wide(file: str, outfile: str,
                 anc_file: str, out_anc_file: str) -> None:
     """Recode file in the "wide" format, for example:
-        11101 -> 2 2 2 1 2
+        11101 -> 2 2 2 1 2. Currently we only pickle the result in binary.
     """
     #with open(file) as f:
     #    data_lines = f.readlines()

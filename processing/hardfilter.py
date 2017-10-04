@@ -14,6 +14,11 @@ import pickle
 def hard_filter(ancestry_file: str, new_ancestry_file: str,
                 infile: str, outfile: str,
                 groups: List[int], ratio: float) -> None:
+    """Apply hard filtering.
+
+    This removes all the sites where the total ratio of ancestry from
+    populations 'groups' is less than 'ratio'.
+    """
     print(f'Started processing', ancestry_file)
     
     with open(ancestry_file, 'rb') as f:

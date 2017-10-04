@@ -8,8 +8,13 @@ Created on Thu Jun 22 12:58:54 2017
 
 import numpy as np
 import pickle
+from typing import Tuple, Dict
 
-def load_freqs(freq_pattern):
+
+def load_freqs(freq_pattern: str) -> Tuple[Dict[int, float], Dict[int, float]]:
+    """Calculate averages and standard deviations from the per site
+    ancestry frequencies from files giben by 'freq_pattern'.
+    """
     mu = {}
     sigma = {}
     for group in range(1, 5):
@@ -20,9 +25,16 @@ def load_freqs(freq_pattern):
         sigma[group] = np.std(freqs)
     return mu, sigma
 
-def soft_filter(ancestry_file: str, snp_file: str, outfile: str, ancestry_outfile: str,
-                mu, sigma, width: float) -> None:
 
+def soft_filter(ancestry_file: str, snp_file: str, outfile: str,
+                ancestry_outfile: str,
+                mu: Dict[int, float], sigma: Dict[int, float],
+                width: float) -> None:
+    """Apply soft filter by per site ancetry data.
+
+    This removes the sites where ancestries are anomalous, i.e. are outside
+    of the interval [mu - width * sigma, mu - width * sigma].
+    """
     print(f'Started processing', ancestry_file)
     with open(ancestry_file, 'rb') as f:
         ancestry = pickle.load(f)

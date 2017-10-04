@@ -4,6 +4,45 @@
 Created on Mon Jul 10 12:20:25 2017
 
 @author: ivan
+
+This file is the 'medeas' main entry point.
+
+Here is the summary of how things are organized.
+On large scale, there are two folders: 'procesing' and 'src'.
+The first one contains files for preprocessing of the data before
+actuall analyzis, this includes various filtering steps, format
+transforms, generation of auxilliary files, setting missingness etc.
+(see function docstrings for details). The second folder contains modules
+for actual analyzis using the eigenvalue statistics.
+
+Here is the summary of steps in normal data pre-processing:
+1. Convert the input files with SNP data and ancestry data into internal
+   binary format (currently just stdlib pickle).
+2. Calculate ancestry frequencies per site.
+3. Manually remove some populations/individuals (if desired).
+3. Filter sites depending on ancetry frequencies, this removes the sites
+   where ancestry is anomaluos (i.e. to far from average).
+4. Filter sites by keeping only those where amount of given ancestry is
+   larger than given level.
+5. Set SNP data with given ancestry as missing.
+6. Filter individuals by keeping only those with given amount of non-missing
+   sites.
+
+Here is the summary of actual analysis workflow:
+1. Calculate distance matrixes for p=1 and p=2 (together with several
+   bootstrapped -- resampled with replacement -- matrixes).
+2. Calculate the eigensystem for two matrixes.
+3. Find T (total tree length) and L (effective number of markers) by fitting
+   the bulk distribution of eigenvalues for p=2.
+4. Find the number of populations (clusters) K using the Tracy-Widom
+   statistics.
+5. Perform agglomerative clustering using K and p=1 distances.
+6. Find the matrix of distances between centers of mass of every cluster.
+7. Use neighbour join and an outgroup to find the tree topology from
+   the above matrix.
+8. Use the tree to construct the constraints and equations for split times D.
+9. Find the split times, repeat steps 5-9 to bootstrap
+   the confidence interval.
 """
 
 # TODO: use argparse and/or config file
@@ -11,11 +50,11 @@ Created on Mon Jul 10 12:20:25 2017
 SIMULATION = False
 
 import options
-options.TESTING = False
-options.FST = True
-options.BOOTRUNS = BOOTRUNS = 10
+options.TESTING = False  # Shows some debugging info and many plots
+options.FST = True  # Also calculates F_ST
+options.BOOTRUNS = BOOTRUNS = 10  # How many bootstrap runs we need.
 
-from typing import List, Iterable
+from typing import List, Iterable, Callable
 
 import sys
 import numpy as np
@@ -56,17 +95,22 @@ final_big_file = big_file_name + '.final'
 asd_pattern = 'pp.{}.asd.data'
 vec_pattern = 'pp.{}.vecs.data'
 
-def do(task, count=cpu_count()):
+
+def do(task: Callable[..., None], count: int = cpu_count()):
+    """A simple helper to paralelize given task across chromosomes."""
     executor = PPE(count)
     return list(executor.map(task, chromosomes))
+
 
 def read_labs(file: str) -> List[str]:
     with open(file) as f:
         return f.readlines()
 
+
 def save_labs(labs: Iterable[str], file: str) -> None:
     with open(file, 'w') as f:
         return f.writelines(labs)
+
 
 # TODO: add options to read and write text files
 
@@ -147,6 +191,7 @@ if '-analyze' in sys.argv:
         new_labels_file = '/Users/ivan/scrm/fake_labs.txt'
     else:
         new_labels_file =  labels_file + '.filtered'
+
     def run_once(boot: int) -> None:
         suffix = '' if boot == -1 else f'.boot.{boot}'
 
@@ -165,6 +210,7 @@ if '-analyze' in sys.argv:
                 res.append(dists.x)
             else:
                 print('Invalid')
+
     for boot in range(-1, BOOTRUNS):
         run_once(boot)
     if res:
@@ -175,5 +221,4 @@ if '-analyze' in sys.argv:
     with open('res10.txt', 'a') as f:
         f.write(f' {Dst} {delta_Dst} {K} {T} {L}\n')
 
-# TODO: Implement statistical bootstrap
 # TODO: Refactor main into four parts: actual main, prepare.py, single_pass.py, bootstrap.py

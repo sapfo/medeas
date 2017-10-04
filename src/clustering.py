@@ -8,7 +8,7 @@ from skbio.tree import nj, TreeNode
 from io import StringIO
 from skbio import read
 
-from scipy.optimize import least_squares  # root
+from scipy.optimize import OptimizeResult, least_squares  # or root?
 
 from typing import Tuple, List
 from collections import Counter
@@ -17,8 +17,17 @@ from random import uniform
 OFFSET = 2
 from options import TESTING
 
-def perform_clustering(npop, vectors_file, labels_file):
 
+def perform_clustering(npop: int,
+                       vectors_file: str, labels_file: str
+                       ) -> Tuple['np.ndarray[int]', 'np.ndarray[float]',
+                                  'np.ndarray[float]', List[str]]:
+    """Perform agglomerative clustering for 'npop' clusters.
+
+    'vectors_file' and 'labels_file' are names of files to read data.
+    Return found labels, distaces from large eigenvalues,
+    eigenvalues read from file, and labels read from file.
+    """
     with open(vectors_file, 'rb') as f:
         lambdas, vecs = pickle.load(f)
     N = len(lambdas)
@@ -80,8 +89,21 @@ def perform_clustering(npop, vectors_file, labels_file):
         plt.show()
     return labs, arr, lambdas, res_labels
 
-def find_tree(npop, asd_file, labs, arr, outgroups: List[str], res_labels: List[str]
+
+def find_tree(npop: int, asd_file: str,
+              labs: 'np.ndarray[int]',
+              arr: 'np.ndarray[float]',
+              outgroups: List[str], res_labels: List[str]
               ) -> Tuple[TreeNode, 'np.ndarray[int]', 'np.ndarray[float]']:
+    """Find tree topology using the centers of mass of clusters.
+
+    'labs' contains assigned labels. 'asd_file' is the name of the file to read
+    original distance matrix. Return the neighbor join tree, population sizes,
+    and the bloks of original distance matrix that correspond to given
+    population pairs (for further determination of fitting window).
+    """
+    # TODO: Refactor function in this file to be more logical instead of
+    # carying over unrelated info.
 
     res_labels = np.array(res_labels)
     cond_lab = np.zeros(labs.shape)
@@ -138,12 +160,19 @@ def find_tree(npop, asd_file, labs, arr, outgroups: List[str], res_labels: List[
     print(new_tree.ascii_art())
     return new_tree, ns, blocks
 
-def find_distances(npop, T, new_tree, ns, lambdas, blocks):
 
+def find_distances(npop: int, T: float,
+                   new_tree: TreeNode, ns: 'np.ndarray[int]',
+                   lambdas: 'np.ndarray[float]',
+                   blocks: 'np.ndarray[np.ndarray[float]]'
+                   ) -> Tuple[OptimizeResult, List[Tuple[int, int]]]:
+    """Find split times from the tree topology."""
     d_ind = np.zeros((npop, npop), dtype='int16')
     constraints = []
 
-    def add_indices(tr: TreeNode, current=0):
+    def add_indices(tr: TreeNode, current: int = 0) -> None:
+        """For every pair of populations substitute an index of coresponding split time.
+        Append distance constraints that correspond to given tree."""
         left = tr.children[0]
         right = tr.children[1]
         if left.is_tip():
@@ -174,7 +203,10 @@ def find_distances(npop, T, new_tree, ns, lambdas, blocks):
     print(d_ind)
     print(constraints)
 
-    def make_D(Dv):
+    def make_D(Dv: List[int]) -> 'np.ndarray[int]':
+        """Make distance (split time) matrix from the given vector of
+        split times 'Dv'.
+        """
         D = np.zeros((npop, npop))
         for i in range(npop):
             for j in range(npop):
@@ -189,7 +221,8 @@ def find_distances(npop, T, new_tree, ns, lambdas, blocks):
         D = make_D(Dv)
         print(D)
 
-    def make_b(D):
+    def make_b(D: 'np.ndarray[int]') -> 'np.ndarray[flost]':
+        """Make the B-matrix (see paper for details)."""
         n = np.sum(ns)
         b = np.zeros((npop, npop))
         delta = np.zeros((npop,))
@@ -214,6 +247,8 @@ def find_distances(npop, T, new_tree, ns, lambdas, blocks):
     mins = np.zeros((npop-1,))
 
     for k in range(npop - 1):
+        # From every block of distances find boundaries for fitting,
+        # i.e. smallest and largest value.
         ks = np.where(d_ind == k)
         subblocks = blocks[ks]
         means = []
@@ -241,7 +276,8 @@ def find_distances(npop, T, new_tree, ns, lambdas, blocks):
     ls = sorted(lambdas, reverse=True)
     ls = np.array(ls[:npop-1])
 
-    def dev(dv):
+    def dev(dv: 'np.ndarray[float]') -> 'np.ndarray[float]':
+        """Find deviation (residuals) for given split time vector 'dv'."""
         D = make_D(dv)
         b = make_b(D)
         vals, vecs = np.linalg.eig(b)
@@ -253,8 +289,13 @@ def find_distances(npop, T, new_tree, ns, lambdas, blocks):
     res = least_squares(dev, inits, bounds=(mins, maxs), gtol=1e-15)
     return res, constraints
 
+
 # TODO: implement validations: positive values and order
-def validate_dists(dists, constraints):
+def validate_dists(dists: 'np.ndarray[float]',
+                   constraints: List[Tuple[int, int]]) -> bool:
+    """Verify if the given split times satisfy the 'constrains' obtained from
+    the tree topology.
+    """
     for c in constraints:
         if not smaller(dists[c[0]], dists[c[1]]):
             return False
@@ -263,7 +304,9 @@ def validate_dists(dists, constraints):
             return False
     return True
 
-def smaller(x, y):
+
+def smaller(x: float, y: float) -> bool:
+    """Approximate 'less than equal'."""
     if x - y < 0.01:
         return True
     if x/y < 1.1:

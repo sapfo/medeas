@@ -1,13 +1,12 @@
 import numpy as np
 import pickle
 
-#N = 294
 
-import sys
-
-def calc_mds(file, outfile):
-
-    with open(file, 'rb') as f: # temp_asd.asd
+def calc_mds(file: str, outfile: str) -> None:
+    """Read distance matrix from 'file', calculate the eigensystem,
+    and store it into 'outfile'.
+    """
+    with open(file, 'rb') as f:
          delta = pickle.load(f)
 
     N = len(delta)

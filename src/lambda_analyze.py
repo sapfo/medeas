@@ -6,6 +6,7 @@ import pickle
 
 from options import TESTING
 
+
 def dens(x: float, a: float, b: float) -> float:
     """Integral of Marchenko-Pastur distribution function on interval
     a < x < b.
@@ -33,8 +34,11 @@ def find_TW(lambdas: Sequence[float], L: float, T: float, N: int) -> float:
     s = (l - mu) / sigma
     return s
 
-def find_T_and_L(file: str) -> Tuple[float, float]:
 
+def find_T_and_L(file: str) -> Tuple[float, float]:
+    """Find total tree length T and effective number of markers L using
+    the bulk eigenvalues from eigensystem stored in (pickled) 'file'.
+    """
     with open(file, 'rb') as f:
         lambdas, vecs = pickle.load(f)
 
@@ -73,8 +77,11 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
 # Tracy-Widom
 # ====================
 
-def find_K(file, L, T):
-
+def find_K(file: str, L: float, T: float) -> int:
+    """Find the number of clusters K using the Tracy-Widom statistics for
+    large eigenvalues. 'L' is the effective number of markers, 'T' is
+    the total tree length, the eigensystem is read from file named 'file'.
+    """
     with open(file, 'rb') as f:
         lambdas, vecs = pickle.load(f)
 
@@ -85,7 +92,8 @@ def find_K(file, L, T):
     s1 = np.sum(lambdas0)
     s2 = np.sum(lambdas0**2)
 
-    print((N+1)*s1**2/((N-1)*s2 - s1**2))
+    print("Alternative estimator",
+          (N+1)*s1**2/((N-1)*s2 - s1**2))  # Patterson estimator for L
     print(s1)
     print(s2)
 

@@ -15,6 +15,7 @@ chromosomes = range(1, 23)
 
 
 def process_chromosome(num: int) -> None:
+    # this is not used currently.
     print(f'Started processing chromosome #{num}')
 
     full_data = np.genfromtxt(f'eur.chi.pap.wcd.abo.chr{num}.txt',
@@ -42,8 +43,10 @@ def process_chromosome(num: int) -> None:
     np.savetxt(f'abo.all.chr{num}.stped', out_data, fmt='%1d')
     print(f'Saved data for chromosome #{num}')
 
+
 def set_missing(ancestry_file: str, infile: str, outfile: str,
                 all_labels: List[str], groups: List[int]) -> None:
+    """Set all data with ancestry from 'groups' as missing."""
     print("Processing file", ancestry_file)
     all_labels = np.array(all_labels)
     columns = np.where(all_labels == 'ABO')
@@ -58,8 +61,12 @@ def set_missing(ancestry_file: str, infile: str, outfile: str,
     with open(outfile, 'wb') as f:
         pickle.dump(full_data, f)
 
+
 def filter_sparse(infile_pattern: str, outfile_pattern: str, ratio: float,
                   labels: List[str]) -> 'np.ndarray[str]':
+    """Keep only individuals where amount of non=missing sites is
+    at least 'ratio'.
+    """
     labels = np.array(labels)
     total = 0
     non_missing = None
@@ -81,8 +88,14 @@ def filter_sparse(infile_pattern: str, outfile_pattern: str, ratio: float,
     labels = labels[columns]
     return labels
 
+
 def filter_manual(infile: str, outfile: str, pops: List[str],
                   labels: List[str]) -> 'np.ndarray[str]':
+    """Manualy remove individuals from populations with labels 'pops'.
+
+    'labels' is the initial list of labels for data. Returns the filtered list
+    of labels the filtered SNP data is pickled.
+    """
     short_labs = np.array([l.split()[0] for l in labels])
     haplo_markers = np.array([l.split()[-1].strip()[-1] for l in labels])
     print('Manual drop: ', pops, infile)

@@ -89,7 +89,17 @@ def process(data: 'np.ndarray[int]',
 
     return dists, norms
 
-def asd_main(pp, name, out_name, txt_format=False):
+
+def asd_main(pp: int, name: str, out_name: str,
+             txt_format: bool = False) -> None:
+    """Calculate the distance matrix with Minkowski parameter 'pp'.
+
+    'name' is the input file name (or format string) with SNP data.
+    'out_name' is the output binary file (pickle). If 'txt_format' is
+    True, the SNP data will be read from a single text file (useful for
+    tests with scrm), otherwise the data will be read from (binary)
+    chromosome files.
+    """
     # On Windows, processes execute the whole file before forking
     # therefore we protect this code with if __name__ == '__main__'
     # Need to think how to avoid copying ``data`` on forking.
@@ -114,7 +124,7 @@ def asd_main(pp, name, out_name, txt_format=False):
     # this should be large to avoid overhead of spawning new processes
     # or we need to reuse them somehow
     MAXSIZE = 200*2**20  # 200 MB
-    BOOTSIZE = 40000
+    BOOTSIZE = 40000  # The window size for statistical bootstrap.
 
     # ---------- global data
 
@@ -134,6 +144,7 @@ def asd_main(pp, name, out_name, txt_format=False):
     f: IO
     chunk_data: List[Tuple['np.ndarray[float]', 'np.ndarray[float]']] = []
     remainder = None  # np.zeros((1, N))
+
     def process_chunks(data) -> None:
         nonlocal remainder, tot_dists, tot_norms
         start_i = 0

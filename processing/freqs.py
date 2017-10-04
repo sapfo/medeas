@@ -18,6 +18,7 @@ from options import TESTING
 freqs = defaultdict(list)
 bars = defaultdict(list)
 
+
 def process_chromosome(file: str) -> None:
     print(f'Started processing', file)
 
@@ -34,7 +35,9 @@ def process_chromosome(file: str) -> None:
         bars[group].append(np.sum(is_ancestry, axis=0))
         print(f'Processed bars for group {group}')
 
-def calculate_freqs(pattern, outpattern):
+
+def calculate_freqs(pattern: str, outpattern: str) -> None:
+    """Calculate ancestry frequencies per site and per individual."""
     for num in range(1, 23):
         process_chromosome(pattern.format(num))
 
