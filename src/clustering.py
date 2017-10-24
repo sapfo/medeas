@@ -102,7 +102,7 @@ def find_tree(npop: int, asd_file: str,
     and the bloks of original distance matrix that correspond to given
     population pairs (for further determination of fitting window).
     """
-    # TODO: Refactor function in this file to be more logical instead of
+    # TODO: Refactor functions in this file to be more logical instead of
     # carying over unrelated info.
 
     res_labels = np.array(res_labels)
