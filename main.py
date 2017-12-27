@@ -47,11 +47,11 @@ Here is the summary of actual analysis workflow:
 
 # TODO: use argparse and/or config file
 
-SIMULATION = False
+SIMULATION = True
 
 import options
 options.TESTING = False  # Shows some debugging info and many plots
-options.FST = True  # Also calculates F_ST
+options.FST = False  # Also calculates F_ST
 options.BOOTRUNS = BOOTRUNS = 10  # How many bootstrap runs we need.
 
 from typing import List, Iterable, Callable
@@ -149,7 +149,8 @@ if '-hard' in sys.argv:
                     [4, 3, 2, 1], 0.1) # PAP or WCD
     do(hardfilt)
 
-labs = np.array([l.split()[0] for l in read_labs(labels_file)])
+if not SIMULATION:
+    labs = np.array([l.split()[0] for l in read_labs(labels_file)])
 
 if '-miss' in sys.argv:
     def setmiss(n):
@@ -166,8 +167,8 @@ if '-sparse' in sys.argv:
 
 if '-asd' in sys.argv:
     if SIMULATION:
-        asd_main(1, '/Users/ivan/scrm/tmpres.txt', asd_pattern.format(1), txt_format=True)
-        asd_main(2, '/Users/ivan/scrm/tmpres.txt', asd_pattern.format(2), txt_format=True)
+        asd_main(1, 'tmpres_x.txt', asd_pattern.format(1), txt_format=True)
+        asd_main(2, 'tmpres_x.txt', asd_pattern.format(2), txt_format=True)
     else:
         asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1))
         asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2))
@@ -188,7 +189,7 @@ if '-analyze' in sys.argv:
 
     res = []
     if SIMULATION:
-        new_labels_file = '/Users/ivan/scrm/fake_labs.txt'
+        new_labels_file = 'fake_labs.txt'
     else:
         new_labels_file =  labels_file + '.filtered'
 
@@ -218,7 +219,7 @@ if '-analyze' in sys.argv:
         delta_Dst = np.std([d[0] for d in res])
     else:
         Dst = delta_Dst = 0
-    with open('res10.txt', 'a') as f:
+    with open('res2.txt', 'a') as f:
         f.write(f' {Dst} {delta_Dst} {K} {T} {L}\n')
 
 # TODO: Refactor main into four parts: actual main, prepare.py, single_pass.py, bootstrap.py

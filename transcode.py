@@ -8,7 +8,8 @@ Created on Tue Sep 19 12:11:31 2017
 
 import sys
 
-n = 100
+n = int(sys.argv[3])
+print(f'n = {n}')
 
 with open(sys.argv[1]) as f:
     data = f.readlines()

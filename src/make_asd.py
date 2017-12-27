@@ -124,13 +124,14 @@ def asd_main(pp: int, name: str, out_name: str,
     # this should be large to avoid overhead of spawning new processes
     # or we need to reuse them somehow
     MAXSIZE = 200*2**20  # 200 MB
-    BOOTSIZE = 40000  # The window size for statistical bootstrap.
+    BOOTSIZE = 400  # The window size for statistical bootstrap.
 
     # ---------- global data
 
     if txt_format:
         with open(name) as f:
              N = len(f.readline())//2
+             print(f'N = {N}')
     else:
         with open(name.format(1), 'rb') as f:
             N = pickle.load(f).shape[1]

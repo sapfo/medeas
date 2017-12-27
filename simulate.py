@@ -14,29 +14,39 @@ TWO_POPS = True
 
 def run_simulation_two_pops(n1: int, n2: int, L: int, theta: float, D: float):
 
-    with open('res10.txt', 'a') as f:
+    # n1 is always an outgroup
+
+    with open('fake_labs.txt', 'w') as f:
+        for i in range(n1+n2):
+            if i < n1:
+                pop = 'PAP'
+            else:
+                pop = 'BRI'
+            f.write(f'{pop}  {pop}{i}\n')
+
+    with open('res2.txt', 'a') as f:
         f.write(f'{L} {2*D}')
 
-    scrm = Popen(f'../scrm/scrm {n1+n2} {L} -t {theta} -I 2 {n1} {n2} -ej {D} 1 2'
+    scrm = Popen(f'scrm {n1+n2} {L} -t {theta} -I 2 {n1} {n2} -ej {D} 1 2'
                  ' --print-model -l -1 -L'.split(' '), stdout=PIPE)
-    grep = Popen(['grep',  rb'^\d*$'], stdin=scrm.stdout, stdout=PIPE)
+    grep = Popen(['grep',  rb'^[0-9]*$'], stdin=scrm.stdout, stdout=PIPE)
     scrm.stdout.close()
     output = grep.communicate()
     data = output[0].decode('utf-8')
 
-    with open('../scrm/tmpout.txt', 'w') as f:
+    with open('tmpout_x.txt', 'w') as f:
         f.write(data)
 
-    trans = Popen('python transcode.py ../scrm/tmpout.txt ../scrm/tmpres.txt'.split(' '),
+    trans = Popen(f'python medeas/transcode.py tmpout_x.txt tmpres_x.txt {n1+n2}'.split(' '),
                   stdout=sys.stdout)
     trans.communicate()
 
     medeas = Popen(['time',
                     'python',
-                    'main.py',
-                    '../raw_data_copy/eur.chi.pap.wcd.abo.chr{}.g10.txt.0.Viterbi.txt',
-                    '../raw_data_copy/eur.chi.pap.wcd.abo.chr{}.txt',
-                    '../raw_data_copy/haplotype_labels.txt',
+                    'medeas/main.py',
+                    'TEMP',
+                    'TEMP',
+                    'TEMP',
                     '-asd',
                     '-analyze'], stdout=sys.stdout)
     medeas.communicate()
@@ -53,29 +63,39 @@ if TWO_POPS:
 
 def run_simulation_three_pops(n1: int, n2: int, n3: int, L: int, theta: float, D: float, D1: float):
 
+    # n1 is always an outgroup
+
+    with open('fake_labs.txt', 'w') as f:
+        for i in range(n1+n2+n3):
+            if i < n1:
+                pop = 'PAP'
+            else:
+                pop = 'BRI'
+            f.write(f'{pop}  {pop}{i}\n')
+
     with open('res3.txt', 'a') as f:
         f.write(str(L))
     
-    scrm = Popen(f'../scrm/scrm {n1+n2+n3} {L} -t {theta} -I 3 {n1} {n2} {n3} -ej {D} 2 1 -ej {D1} 3 2'
+    scrm = Popen(f'scrm {n1+n2+n3} {L} -t {theta} -I 3 {n1} {n2} {n3} -ej {D} 2 1 -ej {D1} 3 2'
                  ' --print-model -l -1 -L'.split(' '), stdout=PIPE)
-    grep = Popen(['grep',  rb'^\d*$'], stdin=scrm.stdout, stdout=PIPE)
+    grep = Popen(['grep',  rb'^[0-9]*$'], stdin=scrm.stdout, stdout=PIPE)
     scrm.stdout.close()
     output = grep.communicate()
     data = output[0].decode('utf-8')
 
-    with open('../scrm/tmpout.txt', 'w') as f:
+    with open('tmpout_x.txt', 'w') as f:
         f.write(data)
 
-    trans = Popen('python transcode.py ../scrm/tmpout.txt ../scrm/tmpres.txt'.split(' '),
+    trans = Popen('python medeas/transcode.py tmpout_x.txt tmpres_x.txt {n1+n2+n3}'.split(' '),
                   stdout=sys.stdout)
     trans.communicate()
 
     medeas = Popen(['time',
                     'python',
-                    'main.py',
-                    '../raw_data_copy/eur.chi.pap.wcd.abo.chr{}.g10.txt.0.Viterbi.txt',
-                    '../raw_data_copy/eur.chi.pap.wcd.abo.chr{}.txt',
-                    '../raw_data_copy/haplotype_labels.txt',
+                    'medeas/main.py',
+                    'TEMP',
+                    'TEMP',
+                    'TEMP',
                     '-asd',
                     '-analyze'], stdout=sys.stdout)
     medeas.communicate()
