@@ -58,6 +58,8 @@ from typing import List, Iterable, Callable
 
 import sys
 import numpy as np
+import matplotlib
+matplotlib.use('Agg') # just in case we are running on  aserver
 import matplotlib.pyplot as plt
 from skbio.tree import TreeNode
 

@@ -119,8 +119,6 @@ def asd_main(pp: int, name: str, out_name: str,
 
     # ---------- constants
 
-    NPROC = cpu_count()
-
     # this should be large to avoid overhead of spawning new processes
     # or we need to reuse them somehow
     MAXSIZE = 200*2**20  # 200 MB
