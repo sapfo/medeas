@@ -52,11 +52,12 @@ SIMULATION = True
 import options
 options.TESTING = False  # Shows some debugging info and many plots
 options.FST = False  # Also calculates F_ST
-options.BOOTRUNS = BOOTRUNS = 10  # How many bootstrap runs we need.
+options.BOOTRUNS = BOOTRUNS = 100  # How many bootstrap runs we need.
 
 from typing import List, Iterable, Callable
 
 import sys
+import os
 import numpy as np
 import matplotlib
 matplotlib.use('Agg') # just in case we are running on  aserver
@@ -169,8 +170,8 @@ if '-sparse' in sys.argv:
 
 if '-asd' in sys.argv:
     if SIMULATION:
-        asd_main(1, 'tmpres_x.txt', asd_pattern.format(1), txt_format=True)
-        asd_main(2, 'tmpres_x.txt', asd_pattern.format(2), txt_format=True)
+        asd_main(1, '_tmp_res.txt', asd_pattern.format(1), txt_format=True)
+        asd_main(2, '_tmp_res.txt', asd_pattern.format(2), txt_format=True)
     else:
         asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1))
         asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2))
@@ -183,6 +184,7 @@ if '-analyze' in sys.argv:
     calc_mds(asd_pattern.format(2), vec_pattern.format(2))
     T, L = find_T_and_L(vec_pattern.format(2))
     K = find_K(vec_pattern.format(2), L, T)
+    K_inf = K
     print('Number of clusters found:', K)
     K_over = 2
     if K_over:
@@ -191,16 +193,30 @@ if '-analyze' in sys.argv:
 
     res = []
     if SIMULATION:
-        new_labels_file = 'fake_labs.txt'
+        new_labels_file = os.path.join(sys.argv[-2], 'fake_labs.txt')
     else:
         new_labels_file =  labels_file + '.filtered'
 
     def run_once(boot: int) -> None:
+        sL = sys.argv[-4]
+        sD = sys.argv[-3]
         suffix = '' if boot == -1 else f'.boot.{boot}'
 
+        if boot == -1 and SIMULATION:
+            labels, short_array, lambdas, res_labels = perform_clustering(K,
+                                                              vec_pattern.format(2) + suffix,
+                                                              new_labels_file)
+            np.savetxt(os.path.join(sys.argv[-2], f'XY_p2_L_{sL}_D_{sD}.txt'),
+                       short_array[:, :2])
+            np.savetxt(os.path.join(sys.argv[-2], f'lambdas_L_{sL}_D_{sD}.txt'), sorted(lambdas, reverse=True))
         labels, short_array, lambdas, res_labels = perform_clustering(K,
                                                           vec_pattern.format(1) + suffix,
                                                           new_labels_file)
+        if boot == -1:
+            np.savetxt(os.path.join(sys.argv[-2], f'labels_L_{sL}_D_{sD}.txt'), labels)
+            np.savetxt(os.path.join(sys.argv[-2], f'XY_p1_L_{sL}_D_{sD}.txt'),
+                       short_array[:, :2])
+
         outgroups = ['PAP']
         tree, ns, blocks = find_tree(K, asd_pattern.format(1) + suffix, labels, short_array,
                                      outgroups, res_labels)
@@ -221,7 +237,7 @@ if '-analyze' in sys.argv:
         delta_Dst = np.std([d[0] for d in res])
     else:
         Dst = delta_Dst = 0
-    with open('res2.txt', 'a') as f:
-        f.write(f' {Dst} {delta_Dst} {K} {T} {L}\n')
+    with open(os.path.join(sys.argv[-2], sys.argv[-1]), 'a') as f:
+        f.write(f' {Dst} {delta_Dst} {K_inf} {T} {L}\n')
 
 # TODO: Refactor main into four parts: actual main, prepare.py, single_pass.py, bootstrap.py

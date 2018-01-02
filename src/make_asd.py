@@ -122,7 +122,7 @@ def asd_main(pp: int, name: str, out_name: str,
     # this should be large to avoid overhead of spawning new processes
     # or we need to reuse them somehow
     MAXSIZE = 200*2**20  # 200 MB
-    BOOTSIZE = 400  # The window size for statistical bootstrap.
+    BOOTSIZE = 100  # The window size for statistical bootstrap.
 
     # ---------- global data
 

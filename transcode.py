@@ -15,6 +15,9 @@ with open(sys.argv[1]) as f:
     data = f.readlines()
 
 data = [d.strip() for d in data]
+seed = data[0]
+with open('_tmp_seed.txt', 'w') as f:
+    f.write(seed)
 data = [d for d in data[1:] if d]
 
 tot_blocks = len(data)//n

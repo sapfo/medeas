@@ -111,7 +111,7 @@ def find_tree(npop: int, asd_file: str,
         cond_lab = np.logical_or(cond_lab, res_labels == outg)
     outg_labs = labs[np.where(cond_lab)]
     count = Counter(outg_labs)
-    if outg_labs:
+    if len(outg_labs):
         outgroup = count.most_common()[0][0]
         outgroup = hex(outgroup)[-1].upper()
 
