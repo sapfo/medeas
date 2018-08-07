@@ -43,7 +43,7 @@ def run_simulation_two_pops(n1: int, n2: int, L: int, theta: float, D: float):
     with open('_tmp_out.txt', 'w') as f:
         f.write(data)
 
-    trans = Popen(f'python medeas/transcode.py _tmp_out.txt _tmp_res.txt {n1+n2}'.split(' '),
+    trans = Popen(f'python transcode.py _tmp_out.txt _tmp_res.txt {n1+n2}'.split(' '),
                   stdout=sys.stdout)
     trans.communicate()
 
@@ -64,11 +64,11 @@ def run_simulation_two_pops(n1: int, n2: int, L: int, theta: float, D: float):
     #argv[-3]: true split time
     #argv[-2]: folder where the simulated data lives
     #argv[-1]: filename where to store the summary of the simulation
-    medeas = Popen(['time','python','medeas/main.py',
+    medeas = Popen(['python','main.py',
                     'TEMP',
                     'TEMP',
                     'TEMP',
-                    '-asd', '-analyze', str(L), str(2*D), folder, FNAME], stdout=sys.stdout)
+                    '-asd', '-analyze', str(L), str(2*D), folder, FNAME])
     medeas.communicate()
 
 if TWO_POPS:
@@ -107,13 +107,13 @@ def run_simulation_three_pops(n1: int, n2: int, n3: int, L: int, theta: float, D
     with open('tmpout_x.txt', 'w') as f:
         f.write(data)
 
-    trans = Popen('python medeas/transcode.py tmpout_x.txt tmpres_x.txt {n1+n2+n3}'.split(' '),
+    trans = Popen('python transcode.py tmpout_x.txt tmpres_x.txt {n1+n2+n3}'.split(' '),
                   stdout=sys.stdout)
     trans.communicate()
 
     medeas = Popen(['time',
                     'python',
-                    'medeas/main.py',
+                    'main.py',
                     'TEMP',
                     'TEMP',
                     'TEMP',
