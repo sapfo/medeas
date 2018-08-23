@@ -5,23 +5,30 @@ Created on Wed Sep 20 17:03:27 2017
 
 @author: ivan
 """
-
+import yappi
 from subprocess import Popen, PIPE
 import sys
 import os
-import numpy as np
+import datetime
+
+yappi.start()
 
 folder = sys.argv[1] # folder should exist. its currently created by job_sim.sh
 
-TWO_POPS = True
+TWO_POPS = False
 FNAME = 'res_sim.txt'
+scrm_file_raw_result = os.path.join(folder, '_tmp_out.txt')
+scrm_file_clean_result = os.path.join(folder, '_tmp_res.txt')
+scrm_file_seed = os.path.join(folder, '_tmp_seed.txt')
+file_fake_labs = os.path.join(folder, 'fake_labs.txt')
+
 
 def run_simulation_two_pops(n1: int, n2: int, L: int, theta: float, D: float):
     scrm_exec = sys.argv[2]
     # n1 is always an outgroup
 
     # create fake labels because medeas needs that
-    with open(os.path.join(folder, 'fake_labs.txt'), 'w') as f:
+    with open(file_fake_labs, 'w') as f:
         for i in range(n1+n2):
             if i < n1:
                 pop = 'PAP'
@@ -40,15 +47,16 @@ def run_simulation_two_pops(n1: int, n2: int, L: int, theta: float, D: float):
     data = output[0].decode('utf-8')
 
     # get the data from scrm, incl seed
-    with open('_tmp_out.txt', 'w') as f:
+
+    with open(scrm_file_raw_result, 'w') as f:
         f.write(data)
 
-    trans = Popen(f'python transcode.py _tmp_out.txt _tmp_res.txt {n1+n2}'.split(' '),
+    trans = Popen(f'python transcode.py {scrm_file_raw_result} {scrm_file_clean_result} {scrm_file_seed} {n1+n2}'.split(' '),
                   stdout=sys.stdout)
     trans.communicate()
 
     #read and write the seed
-    with open('_tmp_seed.txt', 'r') as f:
+    with open(scrm_file_seed, 'r') as f:
         seed = f.read().strip()
     with open(os.path.join(folder, FNAME), 'a') as f:
         f.write(f'{seed} {L} {2*D}') #RESCALE THE SPLIT TIME
@@ -86,12 +94,14 @@ def run_simulation_three_pops(n1: int, n2: int, n3: int, L: int, theta: float, D
     # DOES NOT WORK YET
     # n1 is always an outgroup
 
-    with open('fake_labs.txt', 'w') as f:
+    with open(file_fake_labs, 'w') as f:
         for i in range(n1+n2+n3):
             if i < n1:
                 pop = 'PAP'
-            else:
+            elif i < n2:
                 pop = 'BRI'
+            else:
+                pop = 'CHI'
             f.write(f'{pop}  {pop}{i}\n')
 
     with open('res3.txt', 'a') as f:
@@ -104,25 +114,28 @@ def run_simulation_three_pops(n1: int, n2: int, n3: int, L: int, theta: float, D
     output = grep.communicate()
     data = output[0].decode('utf-8')
 
-    with open('tmpout_x.txt', 'w') as f:
+    with open(scrm_file_raw_result, 'w') as f:
         f.write(data)
 
-    trans = Popen('python transcode.py tmpout_x.txt tmpres_x.txt {n1+n2+n3}'.split(' '),
+    trans = Popen(f'python transcode.py {scrm_file_raw_result} {scrm_file_clean_result} {scrm_file_seed} {n1+n2+n3}'.split(' '),
                   stdout=sys.stdout)
     trans.communicate()
-
-    medeas = Popen(['time',
-                    'python',
-                    'main.py',
+    medeas = Popen(['python','main.py',
                     'TEMP',
                     'TEMP',
                     'TEMP',
-                    '-asd',
-                    '-analyze'], stdout=sys.stdout)
+                    '-asd', '-analyze', str(L), str(2*D), folder, FNAME])
     medeas.communicate()
 
 if not TWO_POPS:
-    Ls3 = [100, 300, 1000, 3000, 10000, 30000]
+    Ls3 = [10000]
     for L in Ls3:
-        for _ in range(10):
-            run_simulation_three_pops(20, 30, 50, int(L), 1, 0.2, 0.1)
+        run_simulation_three_pops(50, 100, 150, int(L), 1, 0.2, 0.1)
+
+
+
+
+func_stats = yappi.get_func_stats()
+#func_stats.save('callgrind.out.' + datetime.datetime.now().isoformat(), 'CALLGRIND')
+yappi.stop()
+yappi.clear_stats()

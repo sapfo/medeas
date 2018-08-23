@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from options import TESTING
 from options import BOOTRUNS
 
+from options import BOOTSIZE   # The window size for statistical bootstrap.
 NPROC = cpu_count()
 
 
@@ -27,7 +28,7 @@ def dist_and_norm(a: 'np.ndarray[int]', b: 'np.ndarray[int]',
     Other sites does not contribute to distance.
     """
     filt = np.logical_and(a, b)
-    dst = filt * dist_func(a-b)
+    dst = filt * dist_func(a - b)
     return np.sum(dst), np.sum(filt)
 
 
@@ -39,7 +40,7 @@ def compute(i: int, data: 'np.ndarray[int]',
     norms: List[int] = []
     if TESTING:
         print(f'Processing row #{i}')
-    for j in range(i+1, N):
+    for j in range(i + 1, N):
         dist, norm = dist_and_norm(data[i], data[j], dist_func)
         dists.append(dist)
         norms.append(norm)
@@ -81,8 +82,8 @@ def process(data: 'np.ndarray[int]',
     while rest:
         i, (dist, norm) = results.get()
         rest -= 1
-        dists[i, i+1:] = dist
-        norms[i, i+1:] = norm
+        dists[i, i + 1:] = dist
+        norms[i, i + 1:] = norm
 
     for proc in procs:
         proc.join()
@@ -100,6 +101,7 @@ def asd_main(pp: int, name: str, out_name: str,
     tests with scrm), otherwise the data will be read from (binary)
     chromosome files.
     """
+
     # On Windows, processes execute the whole file before forking
     # therefore we protect this code with if __name__ == '__main__'
     # Need to think how to avoid copying ``data`` on forking.
@@ -108,31 +110,32 @@ def asd_main(pp: int, name: str, out_name: str,
 
     def test_func(dst: int) -> int:
         if dst > 1:
-            return dst**2
+            return dst ** 2
         else:
             return 0
 
     dist_func = np.vectorize(test_func)
     dist_func = np.abs
     dist_func = np.square
-    dist_func = lambda x: np.abs(x)**pp
+    dist_func = lambda x: np.abs(x) ** pp
 
     # ---------- constants
 
     # this should be large to avoid overhead of spawning new processes
     # or we need to reuse them somehow
-    MAXSIZE = 200*2**20  # 200 MB
-    BOOTSIZE = 100  # The window size for statistical bootstrap.
+    MAXSIZE = 200 * 2 ** 20  # 200 MB
+
 
     # ---------- global data
 
     if txt_format:
         with open(name) as f:
-             N = len(f.readline())//2
-             print(f'N = {N}')
+            N = len(f.readline()) // 2
+            print(f'N = {N}')
     else:
         with open(name.format(1), 'rb') as f:
             N = pickle.load(f).shape[1]
+            print(f'N = {N}')
 
     tot_dists = np.zeros((N, N))
     tot_norms = np.zeros((N, N))
@@ -172,7 +175,7 @@ def asd_main(pp: int, name: str, out_name: str,
                 data = np.array([np.fromstring(line, sep=' ',  # line[-cut:-1]
                                                dtype='int8')
                                  for line in data_lines])
-                #data = data[:, ::2] + data[:, 1::2]
+                # data = data[:, ::2] + data[:, 1::2]
                 print('Chunk loaded')
                 process_chunks(data)
 
@@ -187,9 +190,9 @@ def asd_main(pp: int, name: str, out_name: str,
         delta[i, i] = 0
 
     for i in range(N):
-        for j in range(i+1, N):
-            delta[i, j] = delta[j, i] = tot_dists[i, j]/tot_norms[i, j]
-    delta = delta**(1/pp)
+        for j in range(i + 1, N):
+            delta[i, j] = delta[j, i] = tot_dists[i, j] / tot_norms[i, j]
+    delta = delta ** (1 / pp)
     if TESTING:
         plt.pcolor(delta)
         plt.show()
@@ -208,9 +211,9 @@ def asd_main(pp: int, name: str, out_name: str,
         tot_dists = np.sum(np.array([c[0] for c in chunk_res]), axis=0)
         tot_norms = np.sum(np.array([c[1] for c in chunk_res]), axis=0)
         for i in range(N):
-            for j in range(i+1, N):
-                delta[i, j] = delta[j, i] = tot_dists[i, j]/tot_norms[i, j]
-        delta = delta**(1/pp)
+            for j in range(i + 1, N):
+                delta[i, j] = delta[j, i] = tot_dists[i, j] / tot_norms[i, j]
+        delta = delta ** (1 / pp)
         if TESTING:
             plt.pcolor(delta)
             plt.show()
@@ -224,12 +227,12 @@ def asd_main(pp: int, name: str, out_name: str,
         plt.xlabel('i individual')
         plt.ylabel('j individual')
         plt.title('Distance matrix')
-        flat = delta.reshape(N**2,)
+        flat = delta.reshape(N ** 2, )
         plt.figure()
         plt.hist(flat, 50)
         plt.title('Distances')
         plt.figure()
-        norm_counts = tot_norms.reshape((N**2,))
+        norm_counts = tot_norms.reshape((N ** 2,))
         plt.hist(norm_counts, 50)
         plt.title('SNP counts between pairs')
         plt.figure()
@@ -243,22 +246,23 @@ def asd_main(pp: int, name: str, out_name: str,
         plt.show()
 
 
-def inv_filter(p1, p2, p3): # This should be moved to other place actually
+def inv_filter(p1, p2, p3):  # This should be moved to other place actually
     M = np.eye(3)
     for i in range(3):
-        M[i, 0] += 2*p1*p2
-        M[i, 1] += 2*p1*p3
-        M[i, 2] += 2*p2*p3
-    M[0, 0] -= p1+p2
-    M[1, 1] -= p1+p3
-    M[2, 2] -= p2+p3
+        M[i, 0] += 2 * p1 * p2
+        M[i, 1] += 2 * p1 * p3
+        M[i, 2] += 2 * p2 * p3
+    M[0, 0] -= p1 + p2
+    M[1, 1] -= p1 + p3
+    M[2, 2] -= p2 + p3
     M[0, 1] -= p3
     M[0, 2] -= p3
     M[1, 0] -= p2
     M[1, 2] -= p2
     M[2, 0] -= p1
     M[2, 1] -= p1
-    return np.matrix(M)**-1
+    return np.matrix(M) ** -1
+
 
 if __name__ == '__main__':
     pp = int(sys.argv[2])

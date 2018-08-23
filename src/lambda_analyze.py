@@ -29,9 +29,8 @@ def find_TW(lambdas: Sequence[float], L: float, T: float, N: int) -> float:
     mu = (np.sqrt(n - 1) + np.sqrt(m))**2 / n
     sigma = (1/np.sqrt(n-1) + 1/np.sqrt(m))**(1/3) * (np.sqrt(n - 1) + np.sqrt(m)) / n
     l = lambdas[0] * T**2/2 # * m/np.sum(lambdas)
-    print(l, mu, sigma)
-    print(T**2/2, m/np.sum(lambdas))
     s = (l - mu) / sigma
+    print(f'n = {n}, l = {l},mu =  {mu},sigma = {sigma},T**2/2 = {T**2/2}, m/np.sum(lambdas) = {m/np.sum(lambdas)} s = {s}')
     return s
 
 
@@ -43,7 +42,9 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
         lambdas, vecs = pickle.load(f)
 
     # finding L and T from fit
+
     lambdas_s = np.array(sorted(lambdas))
+    lambdas_s = lambdas_s[1:-3]
     N = len(lambdas)
 
     def dens_fit(x: float, T: float, L: int):
@@ -66,8 +67,16 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
         plt.plot(lambdas_s, range(len(lambdas_s)))
         lambdas_se = np.linspace(lambdas.min(), lambdas.max(), 5000)
         l_dens_fit = [dens_fit(l, *popt) for l in lambdas_se]
+        import matplotlib.pylab as pyl
+        pyl.xlim([0.025,0.075])
         plt.plot(lambdas_se, l_dens_fit)
-        plt.show()
+        plt.savefig('fit.pdf')
+        plt.clf()
+        plt.hist(lambdas_s)
+        plt.savefig('fit2.pdf')
+        plt.clf()
+        plt.hist(l_dens_fit)
+        plt.savefig('fit3.pdf')
     p_err = np.sqrt(np.diag(pcov))
     print('FIT: ', popt, p_err)
     return popt[0], popt[1] - p_err[1]  # Take L 1σ lower to compensate

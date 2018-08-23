@@ -43,16 +43,47 @@ Here is the summary of actual analysis workflow:
 8. Use the tree to construct the constraints and equations for split times D.
 9. Find the split times, repeat steps 5-9 to bootstrap
    the confidence interval.
+
+
+Most of the step above are performed if an option is present in the input file
+Pre-processing step:
+1: -recode
+2: -freqs
+3: -manual
+4: -filter
+5 and 6 are related to -hard -miss and -sparse... not so clear what exactly
+
+Actual analysis
+1: -asd
+2  -> 9: -analyse
+
+The tag SIMULATION should be changed manually if the data comes from simulation.
+In this case, the genotypes result are directly read from the file _tmp_res.txt without
+the pre-processing step .
+
+Argument used:
+    #argv[1] : ancestry pattern (painting)
+    #argv[2] : SNP data
+    #argv[3] : labels file
+    #argv[4:-4]: flags
+    #argv[-4]: true nssites
+    #argv[-3]: true split time
+    #argv[-2]: folder where we want to save the data
+    #argv[-1]: filename where to store the summary of the simulation
+
+the pattern are the file name and should be passed to it with {}
+that will be replaced with the number of the chromosome
+
 """
 
 # TODO: use argparse and/or config file
 
-SIMULATION = True
+
 
 import options
-options.TESTING = False  # Shows some debugging info and many plots
-options.FST = False  # Also calculates F_ST
-options.BOOTRUNS = BOOTRUNS = 100  # How many bootstrap runs we need.
+
+BOOTRUNS = options.BOOTRUNS
+SIMULATION = options.SIMULATION
 
 from typing import List, Iterable, Callable
 
@@ -60,9 +91,8 @@ import sys
 import os
 import numpy as np
 import matplotlib
-matplotlib.use('Agg') # just in case we are running on  aserver
-import matplotlib.pyplot as plt
-from skbio.tree import TreeNode
+matplotlib.use(options.MATHPLOTLIB_BACKEND)
+
 
 from src.make_asd import asd_main
 from src.mds import calc_mds
@@ -82,21 +112,21 @@ snps_pattern = sys.argv[2] if len(sys.argv) > 2 else None
 labels_file = sys.argv[3]
 chromosomes = range(1, 23)
 
+folder = sys.argv[-2]
 snps_pattern_stped = snps_pattern + '.stped'
-group_pattern = 'group.{}'
+group_pattern = os.path.join(folder, 'group.{}')
 freqs_pattern = group_pattern + '.freqs'
 filtered_pattern = snps_pattern_stped + '.filtered'
 filtered_ancestry_pattern = ancestry_pattern + '.filtered'
 hard_filtered_pattern = filtered_pattern + '.hard'
 hard_filtered_ancestry_pattern = filtered_ancestry_pattern + '.hard'
 
-# TODO: Use temporary folder (or read these from argv[]?)
-missingnes_pattern = 'processed.chr.{}.stped'
-big_file_name = '../raw_data_copy/big_file.stped'
-
-final_big_file = big_file_name + '.final'
-asd_pattern = 'pp.{}.asd.data'
-vec_pattern = 'pp.{}.vecs.data'
+missingnes_pattern = os.path.join(folder,'processed','chr.{}.stped')
+directory = os.path.join(folder, 'processed')
+if not os.path.exists(directory):
+    os.makedirs(directory)
+asd_pattern = os.path.join(folder, 'pp.{}.asd.data')
+vec_pattern = os.path.join(folder, 'pp.{}.vecs.data')
 
 
 def do(task: Callable[..., None], count: int = cpu_count()):
@@ -122,7 +152,7 @@ if '-recode' in sys.argv:
         recode_wide(snps_pattern.format(n), snps_pattern_stped.format(n),
                     ancestry_pattern.format(n),
                     ancestry_pattern.format(n) + '.recoded')
-    do(recode, 2)
+    do(recode, 6)
 
 if '-freqs' in sys.argv:
     calculate_freqs(ancestry_pattern + '.recoded', group_pattern)
@@ -131,7 +161,7 @@ if '-manual' in sys.argv:
     for n in chromosomes:
         new_labs = filter_manual(snps_pattern_stped.format(n),
                                  snps_pattern_stped.format(n) + '.selected',
-                                 ['ABO', 'WCD', 'PAP'], read_labs(labels_file))
+                                 ['BRI', 'CHI'], read_labs(labels_file))
     save_labs(new_labs, labels_file + '.selected')
 
 if '-filter' in sys.argv:
@@ -170,8 +200,9 @@ if '-sparse' in sys.argv:
 
 if '-asd' in sys.argv:
     if SIMULATION:
-        asd_main(1, '_tmp_res.txt', asd_pattern.format(1), txt_format=True)
-        asd_main(2, '_tmp_res.txt', asd_pattern.format(2), txt_format=True)
+        scrm_file_clean_result = os.path.join(folder, '_tmp_res.txt')
+        asd_main(1, scrm_file_clean_result, asd_pattern.format(1), txt_format=True)
+        asd_main(2, scrm_file_clean_result, asd_pattern.format(2), txt_format=True)
     else:
         asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1))
         asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2))
@@ -183,17 +214,20 @@ if '-analyze' in sys.argv:
         calc_mds(asd_pattern.format(1) + suffix, vec_pattern.format(1) + suffix)
     calc_mds(asd_pattern.format(2), vec_pattern.format(2))
     T, L = find_T_and_L(vec_pattern.format(2))
+    print(f'Extrapolated value for the total tree length T: {T}')
+    print(f'Extrapolated value for number of loci L:, {L}')
+    T = 6.82
     K = find_K(vec_pattern.format(2), L, T)
     K_inf = K
     print('Number of clusters found:', K)
-    K_over = 2
+    K_over = options.K_OVERRIDE
     if K_over:
         print(f'OVERRIDING WITH: K = {K_over}')
         K = K_over
 
     res = []
     if SIMULATION:
-        new_labels_file = os.path.join(sys.argv[-2], 'fake_labs.txt')
+        new_labels_file = os.path.join(folder, 'fake_labs.txt')
     else:
         new_labels_file =  labels_file + '.filtered'
 
@@ -206,22 +240,23 @@ if '-analyze' in sys.argv:
             labels, short_array, lambdas, res_labels = perform_clustering(K,
                                                               vec_pattern.format(2) + suffix,
                                                               new_labels_file)
-            np.savetxt(os.path.join(sys.argv[-2], f'XY_p2_L_{sL}_D_{sD}.txt'),
+            np.savetxt(os.path.join(folder, f'XY_p2_L_{sL}_D_{sD}.txt'),
                        short_array[:, :2])
-            np.savetxt(os.path.join(sys.argv[-2], f'lambdas_L_{sL}_D_{sD}.txt'), sorted(lambdas, reverse=True))
+            np.savetxt(os.path.join(folder, f'lambdas_L_{sL}_D_{sD}.txt'), sorted(lambdas, reverse=True))
         labels, short_array, lambdas, res_labels = perform_clustering(K,
                                                           vec_pattern.format(1) + suffix,
                                                           new_labels_file)
         if boot == -1:
-            np.savetxt(os.path.join(sys.argv[-2], f'labels_L_{sL}_D_{sD}.txt'), labels)
-            np.savetxt(os.path.join(sys.argv[-2], f'XY_p1_L_{sL}_D_{sD}.txt'),
+            np.savetxt(os.path.join(folder, f'labels_L_{sL}_D_{sD}.txt'), labels)
+            np.savetxt(os.path.join(folder, f'XY_p1_L_{sL}_D_{sD}.txt'),
                        short_array[:, :2])
 
         outgroups = ['PAP']
         tree, ns, blocks = find_tree(K, asd_pattern.format(1) + suffix, labels, short_array,
                                      outgroups, res_labels)
 
-        for _ in range(min(10 + 2**K, 100)):
+
+        for _ in range(1):
             dists, constraints = find_distances(K, T, tree, ns, lambdas, blocks)
             print('Found distances:', dists.x)
             if validate_dists(dists.x, constraints):
@@ -229,15 +264,23 @@ if '-analyze' in sys.argv:
                 res.append(dists.x)
             else:
                 print('Invalid')
+        with open('all_distance.txt','a') as f:
+            f.write(str(dists.x[0])+'\n')
 
+    with open('all_distance.txt','w') as f:
+        f.write('')
     for boot in range(-1, BOOTRUNS):
         run_once(boot)
+
     if res:
-        Dst = np.mean([d[0] for d in res])
-        delta_Dst = np.std([d[0] for d in res])
+        Dst = np.mean([d for d in res])
+        delta_Dst = np.std([d for d in res])
     else:
         Dst = delta_Dst = 0
-    with open(os.path.join(sys.argv[-2], sys.argv[-1]), 'a') as f:
+    with open(os.path.join(folder, sys.argv[-1]), 'a') as f:
+    #    f.write('Dst delta_Dst K_inf T L\n')
         f.write(f' {Dst} {delta_Dst} {K_inf} {T} {L}\n')
+    with open(os.path.join(folder, "all_extrapolated_distances.txt"), 'a') as f:
+        np.savetxt(f,res)
 
 # TODO: Refactor main into four parts: actual main, prepare.py, single_pass.py, bootstrap.py

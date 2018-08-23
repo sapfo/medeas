@@ -8,7 +8,7 @@ Created on Tue Sep 19 12:11:31 2017
 
 import sys
 
-n = int(sys.argv[3])
+n = int(sys.argv[4])
 print(f'n = {n}')
 
 with open(sys.argv[1]) as f:
@@ -16,7 +16,7 @@ with open(sys.argv[1]) as f:
 
 data = [d.strip() for d in data]
 seed = data[0]
-with open('_tmp_seed.txt', 'w') as f:
+with open(sys.argv[3], 'w') as f:
     f.write(seed)
 data = [d for d in data[1:] if d]
 

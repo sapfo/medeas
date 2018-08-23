@@ -18,7 +18,7 @@ OFFSET = 2
 from options import TESTING
 
 
-def perform_clustering(npop: int,
+def plot_mds(npop: int,
                        vectors_file: str, labels_file: str
                        ) -> Tuple['np.ndarray[int]', 'np.ndarray[float]',
                                   'np.ndarray[float]', List[str]]:
@@ -28,9 +28,6 @@ def perform_clustering(npop: int,
     Return found labels, distaces from large eigenvalues,
     eigenvalues read from file, and labels read from file.
     """
-    with open(vectors_file, 'rb') as f:
-        lambdas, vecs = pickle.load(f)
-    N = len(lambdas)
 
     with open(labels_file) as f:
         lines = f.readlines()
@@ -54,9 +51,9 @@ def perform_clustering(npop: int,
     'ENY': '#B3DE8E',
     'NGA': '#399F34',
     'PIL': '#F99B9B',
-    'CHI': 'black',#chinise
-    'BRI': 'blue',#british
-    'PAP': 'red'#papuan
+    'CHI': 'black',
+    'BRI': 'blue',
+    'PAP': 'red'
     }  # TODO: Autogenerate colormap
 
     colors = [colormap[l].lower() for l in labels]
@@ -307,8 +304,8 @@ def validate_dists(dists: 'np.ndarray[float]',
 
 def smaller(x: float, y: float) -> bool:
     """Approximate 'less than equal'."""
-    if x - y < 0.01:
+    if y -  x < 0.001:
         return True
-    if x/y < 1.1:
+    if x/y < 1.001:
         return True
     return False
