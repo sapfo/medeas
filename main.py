@@ -216,7 +216,6 @@ if '-analyze' in sys.argv:
     T, L = find_T_and_L(vec_pattern.format(2))
     print(f'Extrapolated value for the total tree length T: {T}')
     print(f'Extrapolated value for number of loci L:, {L}')
-    T = 6.82
     K = find_K(vec_pattern.format(2), L, T)
     K_inf = K
     print('Number of clusters found:', K)
