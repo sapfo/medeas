@@ -231,8 +231,12 @@ if '-analyze' in sys.argv:
         new_labels_file =  labels_file + '.filtered'
 
     def run_once(boot: int) -> None:
-        sL = sys.argv[-4]
-        sD = sys.argv[-3]
+        #TODO: sL and sD are not known for true datas and should not be used
+        #in the main file. Naming convention should be change. Clean the temps solution
+        #sL = sys.argv[-4]
+        #sD = sys.argv[-3]
+        sL = 1
+        sD = 1
         suffix = '' if boot == -1 else f'.boot.{boot}'
 
         if boot == -1 and SIMULATION:
@@ -250,12 +254,12 @@ if '-analyze' in sys.argv:
             np.savetxt(os.path.join(folder, f'XY_p1_L_{sL}_D_{sD}.txt'),
                        short_array[:, :2])
 
-        outgroups = ['PAP']
+        outgroups = ['pop0']
         tree, ns, blocks = find_tree(K, asd_pattern.format(1) + suffix, labels, short_array,
                                      outgroups, res_labels)
 
 
-        for _ in range(1):
+        for _ in range(min(10 + 2**K, 100)):
             dists, constraints = find_distances(K, T, tree, ns, lambdas, blocks)
             print('Found distances:', dists.x)
             if validate_dists(dists.x, constraints):
@@ -264,7 +268,7 @@ if '-analyze' in sys.argv:
             else:
                 print('Invalid')
         with open('all_distance.txt','a') as f:
-            f.write(str(dists.x[0])+'\n')
+            f.write(f'{dists.x[0]} {dists.x[1]} {dists.x[2]} {dists.x[3]} \n')
 
     with open('all_distance.txt','w') as f:
         f.write('')
