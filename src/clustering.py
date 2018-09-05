@@ -16,6 +16,7 @@ from random import uniform
 
 OFFSET = 2
 from options import TESTING
+from options import VERBOSE
 
 
 def perform_clustering(npop: int,
@@ -25,7 +26,7 @@ def perform_clustering(npop: int,
     """Perform agglomerative clustering for 'npop' clusters.
 
     'vectors_file' and 'labels_file' are names of files to read data.
-    Return found labels, distaces from large eigenvalues,
+    Return found labels, distances from large eigenvalues,
     eigenvalues read from file, and labels read from file.
     """
     with open(vectors_file, 'rb') as f:
@@ -59,7 +60,7 @@ def perform_clustering(npop: int,
     'PAP': 'red'#papuan
     }  # TODO: Autogenerate colormap
 
-    colors = [colormap[l].lower() for l in labels]
+   # colors = [colormap[l].lower() for l in labels]
     res_labels = labels.copy()
 
     arr = np.hstack((lambdas.reshape((N, 1)), vecs.T)).copy()
@@ -77,7 +78,7 @@ def perform_clustering(npop: int,
     labs = clusterer.fit_predict(arr)
     labels = [hex(l)[-1].upper() for l in labs]
 
-    if TESTING:
+    if False:
         # TODO: autogenerate nice summary plot depending on 'npop'
         for p, q in [(0, 1), (0, 2), (1, 2), (0, 3), (1, 3), (2, 3)]:
             fig, ax = plt.subplots()
@@ -171,7 +172,7 @@ def find_distances(npop: int, T: float,
     constraints = []
 
     def add_indices(tr: TreeNode, current: int = 0) -> None:
-        """For every pair of populations substitute an index of coresponding split time.
+        """For every pair of populations substitute an index of corresponding split time.
         Append distance constraints that correspond to given tree."""
         left = tr.children[0]
         right = tr.children[1]
@@ -200,8 +201,9 @@ def find_distances(npop: int, T: float,
     d_ind = d_ind + d_ind.T
     for i in range(npop):
         d_ind[i, i] = -1
-    print(d_ind)
-    print(constraints)
+    if VERBOSE == 2:
+        print(d_ind)
+        print(constraints)
 
     def make_D(Dv: List[int]) -> 'np.ndarray[int]':
         """Make distance (split time) matrix from the given vector of
@@ -214,7 +216,7 @@ def find_distances(npop: int, T: float,
                     D[i, j] = Dv[d_ind[i, j]]
         return D
 
-    if TESTING:
+    if VERBOSE == 2:
         print('------------')
         print(ns)
         Dv = range(npop, 0, -1)
@@ -234,7 +236,7 @@ def find_distances(npop: int, T: float,
                 b[i, j] = ns[i] * ((D[i, j] + 1)**2 - delta[i] - delta[j] + delta_0)
         return b
 
-    if TESTING:
+    if VERBOSE == 2:
         b = make_b(D)
         print('------------')
         print(b)
@@ -268,10 +270,10 @@ def find_distances(npop: int, T: float,
     for i, (mn, mx) in enumerate(zip(mins, maxs)):
         inits[i] = uniform(mn, mx)
 
-    if TESTING:
-        print('Inits:', inits)
-        print('Mins:', mins)
-        print('Maxs:', maxs)
+    if VERBOSE == 2:
+       print('Inits:', inits)
+       print('Mins:', mins)
+       print('Maxs:', maxs)
 
     ls = sorted(lambdas, reverse=True)
     ls = np.array(ls[:npop-1])

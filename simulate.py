@@ -15,7 +15,7 @@ import datetime
 
 folder = sys.argv[1] # folder should exist. its currently created by job_sim.sh
 
-SIMULATION_CASE = 1
+SIMULATION_CASE = 6
 # 1 = 1 population
 # 2 = 2 population
 # 2 = 3 pop
@@ -64,9 +64,9 @@ def run_simulation_single_pop(nb_individual: int, L: int, theta: float):
     transcode_scrm(nb_individual)
 
 if SIMULATION_CASE == 1:
-    Ls3 = [10000]
+    Ls3 = [4000]
     for L in Ls3:
-        run_simulation_single_pop(200, int(L), 1)
+        run_simulation_single_pop(400, int(L), 1)
 
 def run_simulation_two_pops(n1: int, n2: int, L: int, theta: float, D: float):
     # create fake labels because medeas needs that
@@ -84,10 +84,10 @@ def run_simulation_two_pops(n1: int, n2: int, L: int, theta: float, D: float):
     transcode_scrm(n1+n2)
 
 if SIMULATION_CASE == 2:
-    Ls = [10000]
-    D = 0.5
+    Ls = [2000]
+    D = 8
     for L in Ls:
-        run_simulation_two_pops(50, 50, int(L), 2, D)
+        run_simulation_two_pops(100, 100, int(L), 2, D)
 
 def run_simulation_three_pops(n1: int, n2: int, n3: int, L: int, theta: float, D: float, D1: float):
     with open(file_fake_labs, 'w') as f:
@@ -130,7 +130,7 @@ def run_simulation_n_pops(n_per_pop: int, nb_pop: int, L: int, theta: float, D: 
 if SIMULATION_CASE > 3:
     Ls3 = [10000]
     for L in Ls3:
-        run_simulation_n_pops(50, SIMULATION_CASE, int(L), 1, 0.2)
+        run_simulation_n_pops(50, SIMULATION_CASE, int(L), 1, 0.5)
 
 
 

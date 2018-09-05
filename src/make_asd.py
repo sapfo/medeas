@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 
 from options import TESTING
 from options import BOOTRUNS
+from options import VERBOSE
 
 from options import BOOTSIZE   # The window size for statistical bootstrap.
 NPROC = cpu_count()
@@ -38,8 +39,8 @@ def compute(i: int, data: 'np.ndarray[int]',
     """Compute all distances and norms for 'i'th row in 'data'."""
     dists: List[float] = []
     norms: List[int] = []
-    if TESTING:
-        print(f'Processing row #{i}')
+    #if TESTING:
+       # print(f'Processing row #{i}')
     for j in range(i + 1, N):
         dist, norm = dist_and_norm(data[i], data[j], dist_func)
         dists.append(dist)
@@ -151,8 +152,9 @@ def asd_main(pp: int, name: str, out_name: str,
         nonlocal remainder, tot_dists, tot_norms
         start_i = 0
         end_i = BOOTSIZE - len(remainder) if remainder is not None else BOOTSIZE
-        while end_i < len(data):
-            print(f'Processing site {start_i}')
+        while end_i <= len(data):
+            if VERBOSE >= 1:
+                print(f'Processing site {start_i}')
             chunk = data[start_i:end_i]
             if remainder is not None and start_i == 0:
                 chunk = np.vstack((remainder, chunk))

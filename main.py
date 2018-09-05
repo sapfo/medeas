@@ -84,6 +84,7 @@ import options
 
 BOOTRUNS = options.BOOTRUNS
 SIMULATION = options.SIMULATION
+VERBOSE = options.VERBOSE
 
 from typing import List, Iterable, Callable
 
@@ -161,7 +162,7 @@ if '-manual' in sys.argv:
     for n in chromosomes:
         new_labs = filter_manual(snps_pattern_stped.format(n),
                                  snps_pattern_stped.format(n) + '.selected',
-                                 ['BRI', 'CHI'], read_labs(labels_file))
+                                 [], read_labs(labels_file))
     save_labs(new_labs, labels_file + '.selected')
 
 if '-filter' in sys.argv:
@@ -254,24 +255,28 @@ if '-analyze' in sys.argv:
             np.savetxt(os.path.join(folder, f'XY_p1_L_{sL}_D_{sD}.txt'),
                        short_array[:, :2])
 
-        outgroups = ['pop0']
+        outgroups = ['pop5','pop4']
         tree, ns, blocks = find_tree(K, asd_pattern.format(1) + suffix, labels, short_array,
                                      outgroups, res_labels)
 
 
         for _ in range(min(10 + 2**K, 100)):
             dists, constraints = find_distances(K, T, tree, ns, lambdas, blocks)
-            print('Found distances:', dists.x)
+            if VERBOSE >=  1:
+                print('Found distances:', dists.x)
             if validate_dists(dists.x, constraints):
-                print('OK')
+                if VERBOSE >=  1:
+                    print('OK')
                 res.append(dists.x)
+                with open('all_distance.txt', 'a') as f:
+                    f.write(f'{dists.x[0]} {dists.x[1]} {dists.x[2]} {dists.x[3]} {dists.x[4]} \n')
             else:
-                print('Invalid')
-        with open('all_distance.txt','a') as f:
-            f.write(f'{dists.x[0]} {dists.x[1]} {dists.x[2]} {dists.x[3]} \n')
+                if VERBOSE >= 1:
+                    print('Invalid')
+
 
     with open('all_distance.txt','w') as f:
-        f.write('')
+        f.write('D1 D2 D3 D4 D5 \n')
     for boot in range(-1, BOOTRUNS):
         run_once(boot)
 

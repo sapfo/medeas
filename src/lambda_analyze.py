@@ -44,7 +44,7 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
     # finding L and T from fit
 
     lambdas_s = np.array(sorted(lambdas))
-    lambdas_s = lambdas_s[1:-3]
+    lambdas_s = lambdas_s[1:]
     N = len(lambdas)
 
     def dens_fit(x: float, T: float, L: int):
@@ -61,14 +61,16 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
 
     popt, pcov = curve_fit(np.vectorize(dens_fit, otypes=[np.float]),
                            lambdas_s, range(len(lambdas_s)),
-                           p0 = (1, N+1), bounds=([0.1, N], [10, 1000*N]))
+                           p0 = (1, N+1), bounds=([0.1, N], [100, 1000*N]))
+
     # popt[1] = 2000
     if TESTING:
+        plt.close()
         plt.plot(lambdas_s, range(len(lambdas_s)))
         lambdas_se = np.linspace(lambdas.min(), lambdas.max(), 5000)
         l_dens_fit = [dens_fit(l, *popt) for l in lambdas_se]
         import matplotlib.pylab as pyl
-        pyl.xlim([0.025,0.075])
+        pyl.xlim([0.0,0.2])
         plt.plot(lambdas_se, l_dens_fit)
         plt.savefig('fit.pdf')
         plt.clf()
@@ -100,16 +102,20 @@ def find_K(file: str, L: float, T: float) -> int:
 
     s1 = np.sum(lambdas0)
     s2 = np.sum(lambdas0**2)
+    L_patterson =  (N+1)*s1**2/((N-1)*s2 - s1**2)
 
-    print("Alternative estimator",
-          (N+1)*s1**2/((N-1)*s2 - s1**2))  # Patterson estimator for L
-    print(s1)
-    print(s2)
+    print("Used estimator for L ", L)
+    print("Patterson estimator for L (not used)",L_patterson)  # Patterson estimator for L
 
     print('-'*20)
     s = 5
     i = 1
     while s > 3.2724:  # for p-value 0.001
+        s1 = np.sum(np.array(lambdas))
+        s2 = np.sum(np.array(lambdas) ** 2)
+        L_patterson = (N + 1) * s1 ** 2 / ((N - 1) * s2 - s1 ** 2)
+        print("Patterson estimator for L (not used)", L_patterson)  # Patterson estimator for L
+
         s = find_TW(lambdas, L, T, N)
         print(f'eigenvalue {i}: TW = {s}')
         i += 1
