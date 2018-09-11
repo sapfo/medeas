@@ -36,9 +36,9 @@ def process_chromosome(file: str) -> None:
         print(f'Processed bars for group {group}')
 
 
-def calculate_freqs(pattern: str, outpattern: str) -> None:
+def calculate_freqs(pattern: str, outpattern: str,chromosome_range: range) -> None:
     """Calculate ancestry frequencies per site and per individual."""
-    for num in range(1, 23):
+    for num in chromosome_range:
         process_chromosome(pattern.format(num))
 
     total_bars = {}

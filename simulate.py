@@ -136,20 +136,7 @@ if SIMULATION_CASE > 3:
 
 def run_medeas():
     #run medeas, that is main.py, on the simulated data
-    # simulation flag is hard coded for now: SIMULATION = True, needs changing
-    #arguments for medeas:
-    #argv[1] : ancestry pattern (painting) -- never read, SIMULATION = True
-    #argv[2] : SNP data -- never read, SIMULATION = True
-    #argv[3] : labels file -- neer read, SIMULATION = True
-    #argv[4:-4]: flags, -asd: calculate the matrix, -analyze: run all analyses
-    #argv[-4]: true nssites
-    #argv[-3]: true split time
-    #argv[-2]: folder where the simulated data lives
-    #argv[-1]: filename where to store the summary of the simulation
     medeas = Popen(['python','main.py',
-                    'TEMP',
-                    'TEMP',
-                    'TEMP',
                     '-asd', '-analyze', folder, FNAME])
     medeas.communicate()
 

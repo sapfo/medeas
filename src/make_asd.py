@@ -92,7 +92,7 @@ def process(data: 'np.ndarray[int]',
     return dists, norms
 
 
-def asd_main(pp: int, name: str, out_name: str,
+def asd_main(pp: int, name: str, out_name: str,chromosomes: range,
              txt_format: bool = False) -> None:
     """Calculate the distance matrix with Minkowski parameter 'pp'.
 
@@ -182,7 +182,7 @@ def asd_main(pp: int, name: str, out_name: str,
                 process_chunks(data)
 
     else:
-        for n in range(1, 23):
+        for n in chromosomes:
             with open(name.format(n), 'rb') as f:
                 data = pickle.load(f)
             print(f'Loaded data for chromosome: {n}')

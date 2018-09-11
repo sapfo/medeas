@@ -76,8 +76,49 @@ that will be replaced with the number of the chromosome
 
 """
 
-# TODO: use argparse and/or config file
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--skip_recode", help="Skip the convertion of the input files with SNP data and ancestry data into internal binary format",
+                    action="store_true")
+parser.add_argument("--skip_freqs", help="Skip the calculation of the ancestry",
+                    action="store_true")
+parser.add_argument("--skip_manual", help="Skip the manual removal of some populations/individuals",
+                    action="store_true")
+parser.add_argument("--skip_filter", help="Skip the filter on ancestry",
+                    action="store_true")
+parser.add_argument("--skip_miss", help="Skip some important step",
+                    action="store_true")
+parser.add_argument("--skip_hard", help="Skip some important step",
+                    action="store_true")
+parser.add_argument("--skip_sparse", help="Skip some important step",
+                    action="store_true")
+parser.add_argument("--skip_asd", help="Skip the computation of the distance matrices",
+                    action="store_true")
 
+parser.add_argument("--skip_preprocessing", help="Directly proceed to analysis without preparing the data",
+                    action="store_true")
+parser.add_argument("--skip_analysis", help="Prepare the data wihtout performing the actual analysis on them",
+                    action="store_true")
+parser.add_argument("--n_chromosome", help="Number of chromosome If they are stored in different file",
+                    type=int,default=1)
+parser.add_argument("--simulation", help="Does the data come from a simulation",
+                    action="store_true")
+
+parser.add_argument("--outgroup", help="Who is the outgroup in your data", nargs='+')
+
+
+parser.add_argument("-af","--ancestry_file", help="File containing the ancestry of each locus")
+parser.add_argument("-sf","--snps_file", help="Prepare the data wihtout performing the actual analysis on them")
+parser.add_argument("-lf","--labels_file", help="File containing the labels")
+parser.add_argument("-f","--folder", help="Folder where result and temporal data should be store")
+
+
+args = parser.parse_args()
+ancestry_pattern =args.ancestry_file
+snps_pattern = args.snps_file
+folder = args.folder
+labels_file = args.labels_file
+chromosomes = range(1, args.n_chromosome+1)
 
 
 import options
@@ -107,108 +148,101 @@ from processing.filtering import set_missing, filter_sparse, filter_manual
 from concurrent.futures import ProcessPoolExecutor as PPE
 from multiprocessing import cpu_count
 
-ancestry_pattern = sys.argv[1]
-snps_pattern = sys.argv[2] if len(sys.argv) > 2 else None
 
-labels_file = sys.argv[3]
-chromosomes = range(1, 23)
+if not args.skip_preprocessing:
+    snps_pattern_stped = os.path.join(snps_pattern + '.stped')
+    group_pattern = os.path.join(folder, 'group.{}')
+    freqs_pattern = group_pattern + '.freqs'
+    filtered_pattern = snps_pattern_stped + '.filtered'
+    filtered_ancestry_pattern = ancestry_pattern + '.filtered'
+    hard_filtered_pattern = filtered_pattern + '.hard'
+    hard_filtered_ancestry_pattern = filtered_ancestry_pattern + '.hard'
 
-folder = sys.argv[-2]
-snps_pattern_stped = snps_pattern + '.stped'
-group_pattern = os.path.join(folder, 'group.{}')
-freqs_pattern = group_pattern + '.freqs'
-filtered_pattern = snps_pattern_stped + '.filtered'
-filtered_ancestry_pattern = ancestry_pattern + '.filtered'
-hard_filtered_pattern = filtered_pattern + '.hard'
-hard_filtered_ancestry_pattern = filtered_ancestry_pattern + '.hard'
-
-missingnes_pattern = os.path.join(folder,'processed','chr.{}.stped')
-directory = os.path.join(folder, 'processed')
-if not os.path.exists(directory):
-    os.makedirs(directory)
-asd_pattern = os.path.join(folder, 'pp.{}.asd.data')
-vec_pattern = os.path.join(folder, 'pp.{}.vecs.data')
+    missingnes_pattern = os.path.join(folder,'processed','chr.{}.stped')
+    directory = os.path.join(folder, 'processed')
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    asd_pattern = os.path.join(folder, 'pp.{}.asd.data')
+    vec_pattern = os.path.join(folder, 'pp.{}.vecs.data')
 
 
-def do(task: Callable[..., None], count: int = cpu_count()):
-    """A simple helper to paralelize given task across chromosomes."""
-    executor = PPE(count)
-    return list(executor.map(task, chromosomes))
+    def do(task: Callable[..., None], count: int = cpu_count()):
+        """A simple helper to paralelize given task across chromosomes."""
+        executor = PPE(count)
+        return list(executor.map(task, chromosomes))
 
 
-def read_labs(file: str) -> List[str]:
-    with open(file) as f:
-        return f.readlines()
+    def read_labs(file: str) -> List[str]:
+        with open(file) as f:
+            return f.readlines()
 
 
-def save_labs(labs: Iterable[str], file: str) -> None:
-    with open(file, 'w') as f:
-        return f.writelines(labs)
+    def save_labs(labs: Iterable[str], file: str) -> None:
+        with open(file, 'w') as f:
+            return f.writelines(labs)
 
 
-# TODO: add options to read and write text files
+    if not args.skip_recode:
+        def recode(n):
+            recode_wide(snps_pattern.format(n), snps_pattern_stped.format(n),
+                        ancestry_pattern.format(n),
+                        ancestry_pattern.format(n) + '.recoded')
+        do(recode, 6)
 
-if '-recode' in sys.argv:
-    def recode(n):
-        recode_wide(snps_pattern.format(n), snps_pattern_stped.format(n),
-                    ancestry_pattern.format(n),
-                    ancestry_pattern.format(n) + '.recoded')
-    do(recode, 6)
+    if not args.skip_freqs:
+        calculate_freqs(ancestry_pattern + '.recoded', group_pattern, chromosomes)
 
-if '-freqs' in sys.argv:
-    calculate_freqs(ancestry_pattern + '.recoded', group_pattern)
+    if not args.skip_manual:
+        for n in chromosomes:
+            new_labs = filter_manual(snps_pattern_stped.format(n),
+                                     snps_pattern_stped.format(n) + '.selected',
+                                     ["CHI","BRI"], read_labs(labels_file))
+        save_labs(new_labs, labels_file + '.selected')
 
-if '-manual' in sys.argv:
-    for n in chromosomes:
-        new_labs = filter_manual(snps_pattern_stped.format(n),
-                                 snps_pattern_stped.format(n) + '.selected',
-                                 [], read_labs(labels_file))
-    save_labs(new_labs, labels_file + '.selected')
+    if not args.skip_filter:
+        mu, sigma = load_freqs(freqs_pattern)
+        def filterf(n):
+            soft_filter(ancestry_pattern.format(n) + '.recoded',
+                        snps_pattern_stped.format(n) + '.selected',
+                        filtered_pattern.format(n),
+                        filtered_ancestry_pattern.format(n), mu, sigma, 5),
+        do(filterf)
 
-if '-filter' in sys.argv:
-    mu, sigma = load_freqs(freqs_pattern)
-    def filterf(n):
-        soft_filter(ancestry_pattern.format(n) + '.recoded',
-                    snps_pattern_stped.format(n) + '.selected',
-                    filtered_pattern.format(n),
-                    filtered_ancestry_pattern.format(n), mu, sigma, 5),
-    do(filterf)
+    if not args.skip_hard:
+        def hardfilt(n):
+            hard_filter(filtered_ancestry_pattern.format(n),
+                        hard_filtered_ancestry_pattern.format(n),
+                        filtered_pattern.format(n),
+                        hard_filtered_pattern.format(n),
+                        [4, 3, 2, 1], 0.1) # PAP or WCD
+        do(hardfilt)
 
-if '-hard' in sys.argv:
-    def hardfilt(n):
-        hard_filter(filtered_ancestry_pattern.format(n),
-                    hard_filtered_ancestry_pattern.format(n),
-                    filtered_pattern.format(n),
-                    hard_filtered_pattern.format(n),
-                    [4, 3, 2, 1], 0.1) # PAP or WCD
-    do(hardfilt)
+    if not args.simulation:
+        labs = np.array([l.split()[0] for l in read_labs(labels_file)])
 
-if not SIMULATION:
-    labs = np.array([l.split()[0] for l in read_labs(labels_file)])
+    if not args.skip_miss:
+        def setmiss(n):
+            set_missing(hard_filtered_ancestry_pattern.format(n),
+                        hard_filtered_pattern.format(n),
+                        missingnes_pattern.format(n),
+                        labs, [])  # EUR and CHI
+        do(setmiss)
 
-if '-miss' in sys.argv:
-    def setmiss(n):
-        set_missing(hard_filtered_ancestry_pattern.format(n),
-                    hard_filtered_pattern.format(n),
-                    missingnes_pattern.format(n),
-                    labs, [])  # EUR and CHI
-    do(setmiss)
+    if not args.skip_sparse:
+            new_labs = filter_sparse(missingnes_pattern, missingnes_pattern + '.filtered',
+                                     0.3, read_labs(labels_file + '.selected'),chromosomes)
+            save_labs(new_labs, labels_file + '.filtered')
 
-if '-sparse' in sys.argv:
-        new_labs = filter_sparse(missingnes_pattern, missingnes_pattern + '.filtered',
-                                 0.3, read_labs(labels_file + '.selected'))
-        save_labs(new_labs, labels_file + '.filtered')
+    if not args.skip_asd:
+        if args.simulation:
+            scrm_file_clean_result = os.path.join(folder, '_tmp_res.txt')
+            asd_main(1, scrm_file_clean_result, asd_pattern.format(1), chromosomes, txt_format=True)
+            asd_main(2, scrm_file_clean_result, asd_pattern.format(2), chromosomes, txt_format=True)
+        else:
+            asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1),chromosomes)
+            asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2),chromosomes)
 
-if '-asd' in sys.argv:
-    if SIMULATION:
-        scrm_file_clean_result = os.path.join(folder, '_tmp_res.txt')
-        asd_main(1, scrm_file_clean_result, asd_pattern.format(1), txt_format=True)
-        asd_main(2, scrm_file_clean_result, asd_pattern.format(2), txt_format=True)
-    else:
-        asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1))
-        asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2))
-
-if '-analyze' in sys.argv:
+if not args.skip_analysis:
     calc_mds(asd_pattern.format(1), vec_pattern.format(1))
     for boot in range(BOOTRUNS):
         suffix = f'.boot.{boot}'
@@ -255,7 +289,7 @@ if '-analyze' in sys.argv:
             np.savetxt(os.path.join(folder, f'XY_p1_L_{sL}_D_{sD}.txt'),
                        short_array[:, :2])
 
-        outgroups = ['pop5','pop4']
+        outgroups = args.outgroup
         tree, ns, blocks = find_tree(K, asd_pattern.format(1) + suffix, labels, short_array,
                                      outgroups, res_labels)
 
