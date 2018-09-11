@@ -42,7 +42,7 @@ def calculate_freqs(pattern: str, outpattern: str) -> None:
         process_chromosome(pattern.format(num))
 
     total_bars = {}
-    total_freqs = {}
+    total_freqs = {} # npop x nsnip matrix.  For each snp, the number of individual in the meta-population coming from ancestral pop i
 
     zero = np.zeros((118,))
     for group in range(1, 5):

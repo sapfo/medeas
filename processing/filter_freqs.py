@@ -30,7 +30,7 @@ def soft_filter(ancestry_file: str, snp_file: str, outfile: str,
                 ancestry_outfile: str,
                 mu: Dict[int, float], sigma: Dict[int, float],
                 width: float) -> None:
-    """Apply soft filter by per site ancetry data.
+    """Apply soft filter by per site ancestry data.
 
     This removes the sites where ancestries are anomalous, i.e. are outside
     of the interval [mu - width * sigma, mu - width * sigma].
