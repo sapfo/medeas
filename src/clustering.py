@@ -38,29 +38,7 @@ def perform_clustering(npop: int,
 
     labels = [l.split()[0] for l in lines]  # + ['WCD'] * 7
 
-    labels_d = [l.split()[1][:3] for l in lines]
 
-    for (i, l) in enumerate(labels.copy()):
-        if l == 'ABO':
-            labels[i] = labels_d[i]  # TODO: maybe move this logic to main.py
-                                     # or a separate function?
-
-    colormap = {
-    'CAI': '#2679B2',
-    'WPA': '#CAB3D5',
-    'BDV': '#A7CEE2',
-    'RIV': '#E01F27',
-    'WCD': '#FCBE75',
-    'WON': '#FD7F23',
-    'ENY': '#B3DE8E',
-    'NGA': '#399F34',
-    'PIL': '#F99B9B',
-    'CHI': 'black',#chinise
-    'BRI': 'blue',#british
-    'PAP': 'red'#papuan
-    }  # TODO: Autogenerate colormap
-
-   # colors = [colormap[l].lower() for l in labels]
     res_labels = labels.copy()
 
     arr = np.hstack((lambdas.reshape((N, 1)), vecs.T)).copy()
@@ -76,18 +54,6 @@ def perform_clustering(npop: int,
 
     clusterer = AC(n_clusters=npop, compute_full_tree=True)
     labs = clusterer.fit_predict(arr)
-    labels = [hex(l)[-1].upper() for l in labs]
-
-    if False:
-        # TODO: autogenerate nice summary plot depending on 'npop'
-        for p, q in [(0, 1), (0, 2), (1, 2), (0, 3), (1, 3), (2, 3)]:
-            fig, ax = plt.subplots()
-            ax.scatter(arr.T[p], arr.T[q], c=colors, s=100)
-            for i, txt in enumerate(labels):
-                ax.annotate(txt, (arr.T[p, i], arr.T[q, i]))
-            fig.savefig(f'whatever{p}{q}.svg')
-
-        plt.show()
     return labs, arr, lambdas, res_labels
 
 
