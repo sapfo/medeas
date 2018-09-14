@@ -103,6 +103,8 @@ parser.add_argument("--n_chromosome", help="Number of chromosome If they are sto
                     type=int,default=1)
 parser.add_argument("--simulation", help="Does the data come from a simulation",
                     action="store_true")
+parser.add_argument("-K", help="Number of population. If K=0 (default), the soft detect automatically the number of population",
+                    type = int, default=0)
 
 parser.add_argument("--outgroup", help="Who is the outgroup in your data", nargs='+')
 
@@ -124,7 +126,6 @@ chromosomes = range(1, args.n_chromosome+1)
 import options
 
 BOOTRUNS = options.BOOTRUNS
-SIMULATION = options.SIMULATION
 VERBOSE = options.VERBOSE
 
 from typing import List, Iterable, Callable
@@ -148,8 +149,10 @@ from processing.filtering import set_missing, filter_sparse, filter_manual
 from concurrent.futures import ProcessPoolExecutor as PPE
 from multiprocessing import cpu_count
 
+asd_pattern = os.path.join(folder, 'pp.{}.asd.data')
+vec_pattern = os.path.join(folder, 'pp.{}.vecs.data')
 
-if not args.skip_preprocessing:
+if not args.skip_preprocessing and not args.simulation:
     snps_pattern_stped = os.path.join(snps_pattern + '.stped')
     group_pattern = os.path.join(folder, 'group.{}')
     freqs_pattern = group_pattern + '.freqs'
@@ -162,8 +165,6 @@ if not args.skip_preprocessing:
     directory = os.path.join(folder, 'processed')
     if not os.path.exists(directory):
         os.makedirs(directory)
-    asd_pattern = os.path.join(folder, 'pp.{}.asd.data')
-    vec_pattern = os.path.join(folder, 'pp.{}.vecs.data')
 
 
     def do(task: Callable[..., None], count: int = cpu_count()):
@@ -233,14 +234,14 @@ if not args.skip_preprocessing:
                                      0.3, read_labs(labels_file + '.selected'),chromosomes)
             save_labs(new_labs, labels_file + '.filtered')
 
-    if not args.skip_asd:
-        if args.simulation:
-            scrm_file_clean_result = os.path.join(folder, '_tmp_res.txt')
-            asd_main(1, scrm_file_clean_result, asd_pattern.format(1), chromosomes, txt_format=True)
-            asd_main(2, scrm_file_clean_result, asd_pattern.format(2), chromosomes, txt_format=True)
-        else:
-            asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1),chromosomes)
-            asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2),chromosomes)
+if not args.skip_asd:
+    if args.simulation:
+        scrm_file_clean_result = os.path.join(folder, 'output.txt')
+        asd_main(1, scrm_file_clean_result, asd_pattern.format(1), chromosomes, txt_format=True)
+        asd_main(2, scrm_file_clean_result, asd_pattern.format(2), chromosomes, txt_format=True)
+    else:
+        asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1),chromosomes)
+        asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2),chromosomes)
 
 if not args.skip_analysis:
     calc_mds(asd_pattern.format(1), vec_pattern.format(1))
@@ -254,13 +255,13 @@ if not args.skip_analysis:
     K = find_K(vec_pattern.format(2), L, T)
     K_inf = K
     print('Number of clusters found:', K)
-    K_over = options.K_OVERRIDE
+    K_over = args.K
     if K_over:
         print(f'OVERRIDING WITH: K = {K_over}')
         K = K_over
 
     res = []
-    if SIMULATION:
+    if args.simulation:
         new_labels_file = os.path.join(folder, 'fake_labs.txt')
     else:
         new_labels_file =  labels_file + '.filtered'
@@ -274,7 +275,7 @@ if not args.skip_analysis:
         sD = 1
         suffix = '' if boot == -1 else f'.boot.{boot}'
 
-        if boot == -1 and SIMULATION:
+        if boot == -1 and args.simulation:
             labels, short_array, lambdas, res_labels = perform_clustering(K,
                                                               vec_pattern.format(2) + suffix,
                                                               new_labels_file)
@@ -302,8 +303,6 @@ if not args.skip_analysis:
                 if VERBOSE >=  1:
                     print('OK')
                 res.append(dists.x)
-                with open('all_distance.txt', 'a') as f:
-                    f.write(f'{dists.x[0]} {dists.x[1]} {dists.x[2]} {dists.x[3]} {dists.x[4]} \n')
             else:
                 if VERBOSE >= 1:
                     print('Invalid')
