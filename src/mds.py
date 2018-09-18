@@ -10,7 +10,6 @@ def calc_mds(file: str, outfile: str) -> None:
          delta = pickle.load(f)
 
     N = len(delta)
-    print(N)
 
     a = -delta**2/2
 
