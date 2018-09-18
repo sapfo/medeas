@@ -46,11 +46,12 @@ def perform_clustering(npop: int,
     for i, v in enumerate(arr.copy()):
         arr[i] = np.sqrt(v[0])*v[1:]
 
-    print(len(arr))
+
     arr = arr[:npop+OFFSET]
     arr = np.array(arr)
     arr = arr.T
-    print('clustering will be performed on a ' + str(arr.shape) + ' matrix')
+    if VERBOSE >= 1:
+        print('clustering will be performed on a ' + str(arr.shape) + ' matrix')
 
     clusterer = AC(n_clusters=npop, compute_full_tree=True)
     labs = clusterer.fit_predict(arr)
@@ -98,15 +99,15 @@ def find_tree(npop: int, asd_file: str,
     for i in range(npop):
         for j in range(npop):
             blocks[i, j] = delta[np.where(labs == i)[0]].T[np.where(labs == j)[0]]
-
-    print(coords)
-    print(coords.shape)
+    if VERBOSE >= 1:
+        print(coords)
+        print(coords.shape)
 
     for i in range(npop):
         for j in range(npop):
             ds[i, j] = np.sqrt(np.sum((coords[i] - coords[j])**2))
-
-    print(ds)
+    if VERBOSE >= 1:
+        print(ds)
     if TESTING:
         plt.pcolor(ds)
         plt.show()
