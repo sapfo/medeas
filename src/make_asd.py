@@ -17,7 +17,6 @@ from options import TESTING
 from options import BOOTRUNS
 from options import VERBOSE
 
-from options import BOOTSIZE   # The window size for statistical bootstrap.
 NPROC = cpu_count()
 
 
@@ -92,8 +91,10 @@ def process(data: 'np.ndarray[int]',
     return dists, norms
 
 
-def asd_main(pp: int, name: str, out_name: str,chromosomes: range,
-             txt_format: bool = False) -> None:
+def asd_main(pp: int, name: str, out_name: str, chromosomes: range,
+             bootsize: int,
+             txt_format: bool = False
+             ) -> None:
     """Calculate the distance matrix with Minkowski parameter 'pp'.
 
     'name' is the input file name (or format string) with SNP data.
@@ -108,7 +109,6 @@ def asd_main(pp: int, name: str, out_name: str,chromosomes: range,
     # Need to think how to avoid copying ``data`` on forking.
     # Maybe process input file in chunks?
     # On POSIX everything is already fine because of "copy-on-write"
-
     def test_func(dst: int) -> int:
         if dst > 1:
             return dst ** 2
@@ -151,7 +151,7 @@ def asd_main(pp: int, name: str, out_name: str,chromosomes: range,
     def process_chunks(data) -> None:
         nonlocal remainder, tot_dists, tot_norms
         start_i = 0
-        end_i = BOOTSIZE - len(remainder) if remainder is not None else BOOTSIZE
+        end_i = bootsize - len(remainder) if remainder is not None else bootsize
         while end_i <= len(data):
             if VERBOSE >= 1:
                 print(f'Processing site {start_i}')
@@ -163,8 +163,8 @@ def asd_main(pp: int, name: str, out_name: str,chromosomes: range,
             tot_dists += dists
             tot_norms += norms
             chunk_data.append((dists, norms))
-            start_i += BOOTSIZE
-            end_i = start_i + BOOTSIZE
+            start_i += bootsize
+            end_i = start_i + bootsize
         remainder = data[start_i:]
 
     if txt_format:

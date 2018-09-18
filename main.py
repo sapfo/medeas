@@ -113,7 +113,9 @@ parser.add_argument("-af","--ancestry_file", help="File containing the ancestry 
 parser.add_argument("-sf","--snps_file", help="Prepare the data wihtout performing the actual analysis on them")
 parser.add_argument("-lf","--labels_file", help="File containing the labels")
 parser.add_argument("-f","--folder", help="Folder where result and temporal data should be store")
-
+parser.add_argument("-bws","--boot_window_size",
+                    help="How many markers do we have in each bootstraping windows",
+                    type = int, default=100)
 
 args = parser.parse_args()
 ancestry_pattern =args.ancestry_file
@@ -121,7 +123,7 @@ snps_pattern = args.snps_file
 folder = args.folder
 labels_file = args.labels_file
 chromosomes = range(1, args.n_chromosome+1)
-
+bootsize = args.boot_window_size
 
 import options
 
@@ -236,9 +238,9 @@ if not args.skip_preprocessing and not args.simulation:
 
 if not args.skip_asd:
     if args.simulation:
-        scrm_file_clean_result = os.path.join(folder, 'output.txt')
-        asd_main(1, scrm_file_clean_result, asd_pattern.format(1), chromosomes, txt_format=True)
-        asd_main(2, scrm_file_clean_result, asd_pattern.format(2), chromosomes, txt_format=True)
+        scrm_file_clean_result = snps_pattern
+        asd_main(1, scrm_file_clean_result, asd_pattern.format(1), chromosomes,bootsize, txt_format=True)
+        asd_main(2, scrm_file_clean_result, asd_pattern.format(2), chromosomes,bootsize, txt_format=True)
     else:
         asd_main(1, missingnes_pattern + '.filtered', asd_pattern.format(1),chromosomes)
         asd_main(2, missingnes_pattern + '.filtered', asd_pattern.format(2),chromosomes)
