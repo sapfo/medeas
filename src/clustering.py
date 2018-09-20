@@ -252,7 +252,8 @@ def find_distances(npop: int, T: float,
         vals, vecs = np.linalg.eig(b)
         real_vals = 2*(1 - vals)/T**2
         real_vals = np.array(sorted(real_vals, reverse=True))[:npop-1]
-        return real_vals - ls
+        #Even if we expect the eigenvalue to be real, the "numerical" tiny little complex part cause problem for some simulations
+        return np.real(real_vals - ls)
 
     # TODO: find more solutions for D using different initial points (grid(-) or random(+))
     res = least_squares(dev, inits, bounds=(mins, maxs), gtol=1e-15)
