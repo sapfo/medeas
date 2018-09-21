@@ -91,7 +91,7 @@ def process(data: 'np.ndarray[int]',
     return dists, norms
 
 
-def asd_main(pp: int, name: str, out_name: str, chromosomes: range,
+def  asd_main(pp: int, name: str, out_name: str, chromosomes: range,
              bootsize: int,
              txt_format: bool = False
              ) -> None:

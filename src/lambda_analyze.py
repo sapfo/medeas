@@ -73,14 +73,10 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
         pyl.xlim([0.0,0.2])
         plt.plot(lambdas_se, l_dens_fit)
         plt.savefig('fit.pdf')
-        plt.clf()
-        plt.hist(lambdas_s)
-        plt.savefig('fit2.pdf')
-        plt.clf()
-        plt.hist(l_dens_fit)
-        plt.savefig('fit3.pdf')
     p_err = np.sqrt(np.diag(pcov))
     print('FIT: ', popt, p_err)
+    print(f'Extrapolated value for the total tree length T: {popt[0]}')
+    print(f'Extrapolated value for number of loci L:, {popt[1] - p_err[1]}')
     return popt[0], popt[1] - p_err[1]  # Take L 1σ lower to compensate
                                         # for tendency to overestimate
 
@@ -128,4 +124,5 @@ def find_K(file: str, L: float, T: float) -> int:
         plt.plot(lambdas, 'b.')
         plt.figure()
         plt.hist(lambdas, 50)
+    print('Number of clusters found:', i - 1)
     return i - 1
