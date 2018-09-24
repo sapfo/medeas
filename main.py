@@ -124,12 +124,23 @@ from src.mds import calc_mds
 from src.lambda_analyze import find_T_and_L, find_K
 from prepare import preprocess_data
 from single_pass import run_once
-asd_pattern = os.path.join(output_folder, 'p{}.asd.data')
-vec_pattern = os.path.join(output_folder, 'p{}.vecs.data')
+
 
 output_file = os.path.join(output_folder, 'processed', 'chr.{}.stped')
+
 if not args.simulation and not args.skip_preprocessing:
-    preprocess_data(snps_pattern,ancestry_pattern, output_folder,output_file,chromosomes)
+    preprocess_data(snps_pattern,ancestry_pattern, output_folder,output_file,chromosomes,labels_file)
+
+asd_folder = "asd_matrices"
+mds_folder = "MDS_eigensystem"
+asd_full_path = os.path.join(output_folder,asd_folder)
+mds_full_path = os.path.join(output_folder,mds_folder)
+all_path = [asd_full_path,mds_full_path]
+for path in all_path:
+    if not os.path.exists(path):
+        os.makedirs(path)
+asd_pattern = os.path.join(asd_full_path, 'p{}.asd.data')
+vec_pattern = os.path.join(mds_full_path, 'p{}.vecs.data')
 
 if not args.skip_calculate_matrix:
     if args.simulation:
@@ -137,8 +148,8 @@ if not args.skip_calculate_matrix:
         asd_main(1, scrm_file_clean_result, asd_pattern.format(1), chromosomes,bootsize, txt_format=True)
         asd_main(2, scrm_file_clean_result, asd_pattern.format(2), chromosomes,bootsize, txt_format=True)
     else:
-        asd_main(1, output_file, asd_pattern.format(1),chromosomes)
-        asd_main(2, output_file, asd_pattern.format(2),chromosomes)
+        asd_main(1, output_file, asd_pattern.format(1),chromosomes,bootsize)
+        asd_main(2, output_file, asd_pattern.format(2),chromosomes,bootsize)
 
     calc_mds(asd_pattern.format(1), vec_pattern.format(1))
     calc_mds(asd_pattern.format(2), vec_pattern.format(2))
@@ -157,12 +168,15 @@ if not args.skip_analysis:
         K = K_over
 
     all_res = []
+
     outgroups = args.outgroup
 
     for boot in range(-1, BOOTRUNS):
         boot_res = run_once(boot,outgroups,K,T,asd_pattern, vec_pattern,labels_file)
-        all_res = np.append(all_res,boot_res)
+        for res in boot_res:
+            all_res.append(res)
 
-    with open(os.path.join(output_folder, "all_extrapolated_distances.txt"), 'a') as f:
+
+    with open(os.path.join(output_folder, "all_extrapolated_distances.txt"), 'w') as f:
         np.savetxt(f, all_res)
 
