@@ -277,8 +277,8 @@ def validate_dists(dists: 'np.ndarray[float]',
 
 def smaller(x: float, y: float) -> bool:
     """Approximate 'less than equal'."""
-    if x - y < 0.01:
+    if x - y < 0.00001:
         return True
-    if x/y < 1.1:
+    if x/y < 1.0000001 and np.sign(y) > np.sign(x):
         return True
     return False
