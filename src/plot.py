@@ -277,7 +277,7 @@ def find_distances(npop: int, T: float,
         """Find deviation (residuals) for given split time vector 'dv'."""
         D = make_D(dv)
         b = make_b(D)
-        vals, vecs = np.linalg.eig(b)
+        vals, vecs = np.linalg.eigh(b)
         real_vals = 2*(1 - vals)/T**2
         real_vals = np.array(sorted(real_vals, reverse=True))[:npop-1]
         return real_vals - ls

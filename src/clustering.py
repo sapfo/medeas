@@ -249,7 +249,7 @@ def find_distances(npop: int, T: float,
         """Find deviation (residuals) for given split time vector 'dv'."""
         D = make_D(dv)
         b = make_b(D)
-        vals, vecs = np.linalg.eig(b)
+        vals, vecs = np.linalg.eigh(b)
         real_vals = 2*(1 - vals)/T**2
         real_vals = np.array(sorted(real_vals, reverse=True))[:npop-1]
         #Even if we expect the eigenvalue to be real, the "numerical" tiny little complex part cause problem for some simulations
@@ -277,8 +277,8 @@ def validate_dists(dists: 'np.ndarray[float]',
 
 def smaller(x: float, y: float) -> bool:
     """Approximate 'less than equal'."""
-    if x - y < 0.00001:
+    if x - y < 0.01:
         return True
-    if x/y < 1.0000001 and np.sign(y) > np.sign(x):
+    if x/y < 1.01 and np.sign(y) > np.sign(x):
         return True
     return False

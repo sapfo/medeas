@@ -19,7 +19,7 @@ def calc_mds(file: str, outfile: str) -> None:
     one = np.ones((N,))
     b = a - np.outer(at0, one) - np.outer(one, at0) + att
 
-    lambdas, vecs = np.linalg.eig(b)
+    lambdas, vecs = np.linalg.eigh(b)
 
     with open(outfile, 'wb') as f:
         pickle.dump((lambdas, vecs), f)
