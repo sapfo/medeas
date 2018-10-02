@@ -160,8 +160,8 @@ if not args.skip_calculate_matrix:
 
 
 if not args.skip_analysis:
-    T, L = find_T_and_L(vec_pattern.format(2))
-    K = find_K(vec_pattern.format(2), L, T)
+    T, L, shift = find_T_and_L(vec_pattern.format(2))
+    K = find_K(vec_pattern.format(2), L, T,shift)
     K_over = args.K
     if K_over:
         print(f'OVERRIDING  K = {K} WITH: K = {K_over}')

@@ -62,7 +62,7 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
 
     popt, pcov = curve_fit(np.vectorize(dens_fit, otypes=[np.float]),
                            lambdas_s, range(len(lambdas_s)),
-                           p0 = (1, 2*N,0), bounds=([0.1, N,-0.02], [100, 100000*N,0.02]))
+                           p0 = (5, 10000,0), bounds=([1, 1000,-0.02], [10, 10000,0.02]))
 
     # popt[1] = 2000
     if TESTING:
@@ -77,22 +77,22 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
     p_err = np.sqrt(np.diag(pcov))
     print('FIT: ', popt, p_err)
     print(f'Extrapolated value for the total tree length T: {popt[0]}')
-    print(f'Extrapolated value for number of loci L:, {popt[1] - p_err[1]}')
-    return popt[0], popt[1]  # Take L 1σ lower to compensate
+    print(f'Extrapolated value for number of loci L:, {popt[1]}')
+    return popt[0], popt[1],popt[2]  # Take L 1σ lower to compensate
                                         # for tendency to overestimate
 
 # ====================
 # Tracy-Widom
 # ====================
 
-def find_K(file: str, L: float, T: float) -> int:
+def find_K(file: str, L: float, T: float, shift: float) -> int:
     """Find the number of clusters K using the Tracy-Widom statistics for
     large eigenvalues. 'L' is the effective number of markers, 'T' is
     the total tree length, the eigensystem is read from file named 'file'.
     """
     with open(file, 'rb') as f:
         lambdas, vecs = pickle.load(f)
-
+    lambdas = lambdas + shift
     N = len(lambdas)
     lambdas = list(sorted(lambdas, reverse=True))
     lambdas0 = np.array(lambdas)
