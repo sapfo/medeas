@@ -47,21 +47,22 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
     lambdas_s = lambdas_s[1:]
     N = len(lambdas)
 
-    def dens_fit(x: float, T: float, L: int):
+    def dens_fit(x: float, T: float, L: int, shift: float):
         """Integral of Marchenko-Pastur distribution function for
         arbitrary x from total tree length 'T' and number of markers L.
         """
-        a = 2/T**2 * (1 - np.sqrt(N/L))**2
-        b = 2/T**2 * (1 + np.sqrt(N/L))**2
+        x = x - shift
+        a = 2 / T ** 2 * (1 - np.sqrt(N / L)) ** 2
+        b = 2 / T ** 2 * (1 + np.sqrt(N / L)) ** 2
         if x <= a:
             return 0.0
         if x >= b:
-            return (N-1) * 1.0
-        return (N-1) * dens(x, a, b) / dens(b, a, b)
+            return (N - 1) * 1.0
+        return (N - 1) * dens(x, a, b) / dens(b, a, b)
 
     popt, pcov = curve_fit(np.vectorize(dens_fit, otypes=[np.float]),
                            lambdas_s, range(len(lambdas_s)),
-                           p0 = (1, N+1), bounds=([0.1, N], [100, 1000*N]))
+                           p0 = (1, 2*N,0), bounds=([0.1, N,-0.02], [100, 100000*N,0.02]))
 
     # popt[1] = 2000
     if TESTING:
@@ -77,7 +78,7 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
     print('FIT: ', popt, p_err)
     print(f'Extrapolated value for the total tree length T: {popt[0]}')
     print(f'Extrapolated value for number of loci L:, {popt[1] - p_err[1]}')
-    return popt[0], popt[1] - p_err[1]  # Take L 1σ lower to compensate
+    return popt[0], popt[1]  # Take L 1σ lower to compensate
                                         # for tendency to overestimate
 
 # ====================
