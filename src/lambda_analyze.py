@@ -77,7 +77,13 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
     print('FIT: ', popt, p_err)
     print(f'Extrapolated value for the total tree length T: {popt[0]}')
     print(f'Extrapolated value for number of loci L:, {popt[1] - p_err[1]}')
-    return popt[0], popt[1] - p_err[1]  # Take L 1σ lower to compensate
+
+##to be removed
+    s1 = np.sum(lambdas_s)
+    s2 = np.sum(lambdas_s**2)
+    L_patterson =  (N+1)*s1**2/((N-1)*s2 - s1**2)
+##end to be removed
+    return popt[0], L_patterson  # Take L 1σ lower to compensate
                                         # for tendency to overestimate
 
 # ====================
