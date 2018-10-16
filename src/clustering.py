@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from sklearn.cluster import AgglomerativeClustering as AC
 import matplotlib.pyplot as plt
 import pickle
@@ -17,7 +18,7 @@ from random import uniform
 OFFSET = 2
 from options import TESTING
 from options import VERBOSE
-
+from src.plot import plot_mds
 
 def perform_clustering(npop: int,
                        vectors_file: str, labels_file: str
@@ -50,12 +51,14 @@ def perform_clustering(npop: int,
     arr = arr[:npop+OFFSET]
     arr = np.array(arr)
     arr = arr.T
+
     if VERBOSE >= 1:
         print('clustering will be performed on a ' + str(arr.shape) + ' matrix')
 
     clusterer = AC(n_clusters=npop, compute_full_tree=True)
-    labs = clusterer.fit_predict(arr)
-    return labs, arr, lambdas, res_labels
+    lab_infered = clusterer.fit_predict(arr)
+    plot_mds(arr,labels,lab_infered,os.path.dirname(labels_file))
+    return lab_infered, arr, lambdas, res_labels
 
 
 def find_tree(npop: int, asd_file: str,
