@@ -211,50 +211,8 @@ def  asd_main(pp: int, Simulation,txt_format: bool = False) -> None:
             pickle.dump(delta, f)
 
     print('Distance matrix computed')
-    if TESTING:
-        with open(label) as f:
-            lines = f.readlines()
+    Simulation.plot_distance_matrix(delta)
 
-        labels_individual = np.array([l.split()[0] for l in lines])
-        sorted_labels_individual = np.sort(labels_individual)
-        label_pop = np.unique(labels_individual)
-        sorting_index = np.argsort(labels_individual)
-        individual_per_pop = [np.sum(labels_individual == label) for label in np.sort(label_pop)]
-        end_position = np.cumsum(individual_per_pop)
-        start_position = np.insert(end_position, 0, 0, axis=0)
-        print(start_position)
-        delta = delta[sorting_index, :]
-        delta = delta[:, sorting_index]
-        plt.figure()
-        plt.imshow(delta)
-        plt.tick_params(bottom=False, top=True, labeltop=True, labelbottom=False)
-        plt.xticks(start_position, np.sort(label_pop), rotation='vertical')
-        plt.yticks(start_position, np.sort(label_pop))
-        plt.savefig("plot_distance.pdf")
-        plt.figure()
-
-        for population_label in label_pop:
-            population_position = sorted_labels_individual == population_label
-            pop_mat = delta[np.ix_(population_position, population_position)]
-            all_pop_value = pop_mat.flatten()
-            all_pop_value = all_pop_value[all_pop_value > 0.00000001]
-            plt.hist(all_pop_value, 15, label=population_label, density=1, alpha=0.75)
-        plt.legend()
-        plt.savefig("Time_per_pop.pdf")
-
-        nb_population = len(label_pop)
-        for pop1_index in range(nb_population):
-            plt.figure()
-            for pop2_index in range(nb_population):
-                population_position1 = labels_individual == label_pop[pop1_index]
-                population_position2 = labels_individual == label_pop[pop2_index]
-                pop_mat = delta[np.ix_(population_position1, population_position2)]
-                all_pop_value = pop_mat.flatten()
-                all_pop_value = all_pop_value[all_pop_value > 0.00000001]
-                plt.hist(all_pop_value, 20, label=label_pop[pop1_index] + "-" + label_pop[pop2_index], density=1,
-                         alpha=0.5)
-            plt.legend(ncol=2)
-            plt.savefig(f"time_pop_{label_pop[pop1_index]}.pdf")
 
 
 def inv_filter(p1, p2, p3):  # This should be moved to other place actually
