@@ -1,5 +1,7 @@
 import argparse
 import os
+import numpy as np
+import matplotlib.pyplot as plt
 
 class simulation_info(object):
 
@@ -64,6 +66,9 @@ class simulation_info(object):
 
 
 
+    def generate_output(self):
+        with open(os.path.join(self.output_folder, "all_extrapolated_distances.txt"), 'w') as f:
+            np.savetxt(f, self.all_res)
 
 
 

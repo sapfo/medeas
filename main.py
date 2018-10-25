@@ -60,14 +60,12 @@ if not Simulation.skip_analysis:
         print(f'OVERRIDING  K = {K} WITH: K = {K_over}')
         K = K_over
 
-    all_res = []
+    Simulation.all_res = []
 
     for boot in range(-1, BOOTRUNS):
         boot_res = run_once(boot, Simulation.outgroups, K, T, Simulation.asd_pattern, Simulation.vec_pattern, Simulation.labels_file)
         for res in boot_res:
-            all_res.append(res)
+            Simulation.all_res.append(res)
 
-
-    with open(os.path.join(Simulation.output_folder, "all_extrapolated_distances.txt"), 'w') as f:
-        np.savetxt(f, all_res)
+    Simulation.generate_output()
 
