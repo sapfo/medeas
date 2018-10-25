@@ -13,10 +13,10 @@ VERBOSE = options.VERBOSE
 def run_once(boot: int,outgroups:  List[str], K: int, T: float, asd_pattern: str,vec_pattern: str ,label: str) -> None:
     suffix = f'.boot.{boot}' if boot > -1 else ''
     labels, short_array, lambdas, res_labels = perform_clustering(K,
-                                                                  vec_pattern.format(2) + suffix,
+                                                                  vec_pattern.format(1) + suffix,
                                                                   label)
 
-    tree, ns, blocks = find_tree(K, asd_pattern.format(2) + suffix, labels, short_array,
+    tree, ns, blocks = find_tree(K, asd_pattern.format(1) + suffix, labels, short_array,
                                  outgroups, res_labels)
 
     res = []

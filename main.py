@@ -145,11 +145,11 @@ vec_pattern = os.path.join(mds_full_path, 'p{}.vecs.data')
 if not args.skip_calculate_matrix:
     if args.simulation:
         scrm_file_clean_result = snps_pattern
-        asd_main(1, scrm_file_clean_result, asd_pattern.format(1), chromosomes,bootsize, txt_format=True)
-        asd_main(2, scrm_file_clean_result, asd_pattern.format(2), chromosomes,bootsize, txt_format=True)
+        asd_main(1, scrm_file_clean_result, asd_pattern.format(1), chromosomes, bootsize, labels_file, txt_format=True)
+        asd_main(2, scrm_file_clean_result, asd_pattern.format(2), chromosomes, bootsize, labels_file, txt_format=True)
     else:
-        asd_main(1, output_file, asd_pattern.format(1),chromosomes,bootsize)
-        asd_main(2, output_file, asd_pattern.format(2),chromosomes,bootsize)
+        asd_main(1, output_file, asd_pattern.format(1), chromosomes, bootsize, labels_file)
+        asd_main(2, output_file, asd_pattern.format(2), chromosomes, bootsize, labels_file)
 
     calc_mds(asd_pattern.format(1), vec_pattern.format(1))
     calc_mds(asd_pattern.format(2), vec_pattern.format(2))
