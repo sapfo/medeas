@@ -64,119 +64,66 @@ that will be replaced with the number of the chromosome
 
 """
 
-import argparse
-parser = argparse.ArgumentParser()
 
-
-parser.add_argument("-sf","--snps_file", help="Prepare the data wihtout performing the actual analysis on them",
-                    required=True)
-parser.add_argument("-lf","--labels_file", help="File containing the labels",
-                    required=True)
-parser.add_argument("-of","--output_folder", help="Folder where results and temporal data should be store")
-parser.add_argument("-K", help="Number of population. If K=0 (default), the soft detect automatically the number of population",
-                    type = int, default=0)
-parser.add_argument("--n_chromosome", help="Number of chromosome If they are stored in different file",
-                    type=int,default=1)
-parser.add_argument("--outgroup", help="Who is the outgroup in your data", nargs='+')
-
-
-parser.add_argument("-af","--ancestry_file", help="File containing the ancestry of each locus")
-
-
-
-parser.add_argument("-bws","--boot_window_size",
-                    help="How many markers do we have in each bootstraping windows",
-                    type = int, default=100)
-
-parser.add_argument("--simulation", help="Does the data come from a simulation",
-                    action="store_true")
-parser.add_argument("--skip_calculate_matrix", help="Skip the computation of the distance matrices and the related MDS matrix",
-                    action="store_true")
-parser.add_argument("--skip_preprocessing", help="Directly proceed to analysis without preparing the data",
-                    action="store_true")
-parser.add_argument("--skip_analysis", help="Prepare the data wihtout performing the actual analysis on them",
-                    action="store_true")
-
-args = parser.parse_args()
-ancestry_pattern =args.ancestry_file
-snps_pattern = args.snps_file
-output_folder = args.output_folder
-labels_file = args.labels_file
-chromosomes = range(1, args.n_chromosome+1)
-bootsize = args.boot_window_size
 
 import options
 
 BOOTRUNS = options.BOOTRUNS
 VERBOSE = options.VERBOSE
 
-
-
-
 import os
 import numpy as np
 import matplotlib
+import sys
 matplotlib.use(options.MATHPLOTLIB_BACKEND)
-
-
+from src.simulation import simulation_info
 from src.make_asd import asd_main
 from src.mds import calc_mds
 from src.lambda_analyze import find_T_and_L, find_K
-from prepare import preprocess_data
 from single_pass import run_once
+from prepare import preprocess_data
+
+Simulation = simulation_info()
 
 
-output_file = os.path.join(output_folder, 'processed', 'chr.{}.stped')
+if not Simulation.simulation and not Simulation.skip_preprocessing:
+    preprocess_data(Simulation.snps_pattern, Simulation.ancestry_pattern, Simulation.output_folder, Simulation.output_file, Simulation.chromosomes, Simulation.labels_file)
 
-if not args.simulation and not args.skip_preprocessing:
-    preprocess_data(snps_pattern,ancestry_pattern, output_folder,output_file,chromosomes,labels_file)
 
-asd_folder = "asd_matrices"
-mds_folder = "MDS_eigensystem"
-asd_full_path = os.path.join(output_folder,asd_folder)
-mds_full_path = os.path.join(output_folder,mds_folder)
-all_path = [asd_full_path,mds_full_path]
-for path in all_path:
-    if not os.path.exists(path):
-        os.makedirs(path)
-asd_pattern = os.path.join(asd_full_path, 'p{}.asd.data')
-vec_pattern = os.path.join(mds_full_path, 'p{}.vecs.data')
 
-if not args.skip_calculate_matrix:
-    if args.simulation:
-        scrm_file_clean_result = snps_pattern
-        asd_main(1, scrm_file_clean_result, asd_pattern.format(1), chromosomes, bootsize, labels_file, txt_format=True)
-        asd_main(2, scrm_file_clean_result, asd_pattern.format(2), chromosomes, bootsize, labels_file, txt_format=True)
+if not Simulation.skip_calculate_matrix:
+    if Simulation.simulation:
+        scrm_file_clean_result = Simulation.snps_pattern
+        asd_main(1, Simulation.snps_pattern, Simulation.asd_pattern.format(1), Simulation.chromosomes, Simulation.bootsize, Simulation.labels_file, txt_format=True)
+        asd_main(2, Simulation.snps_pattern, Simulation.asd_pattern.format(2), Simulation.chromosomes, Simulation.bootsize, Simulation.labels_file, txt_format=True)
     else:
-        asd_main(1, output_file, asd_pattern.format(1), chromosomes, bootsize, labels_file)
-        asd_main(2, output_file, asd_pattern.format(2), chromosomes, bootsize, labels_file)
+        asd_main(1, Simulation.output_file, Simulation.asd_pattern.format(1), Simulation.chromosomes, Simulation.bootsize, Simulation.labels_file)
+        asd_main(2, Simulation.output_file, Simulation.asd_pattern.format(2), Simulation.chromosomes, Simulation.bootsize, Simulation.labels_file)
 
-    calc_mds(asd_pattern.format(1), vec_pattern.format(1))
-    calc_mds(asd_pattern.format(2), vec_pattern.format(2))
+    calc_mds(Simulation.asd_pattern.format(1), Simulation.vec_pattern.format(1))
+    calc_mds(Simulation.asd_pattern.format(2), Simulation.vec_pattern.format(2))
     for boot in range(BOOTRUNS):
         suffix = f'.boot.{boot}'
-        calc_mds(asd_pattern.format(1) + suffix, vec_pattern.format(1) + suffix)
-        calc_mds(asd_pattern.format(2) + suffix, vec_pattern.format(2) + suffix)
+        calc_mds(Simulation.asd_pattern.format(1) + suffix, Simulation.vec_pattern.format(1) + suffix)
+        calc_mds(Simulation.asd_pattern.format(2) + suffix, Simulation.vec_pattern.format(2) + suffix)
 
 
-if not args.skip_analysis:
-    T, L = find_T_and_L(vec_pattern.format(2))
-    K = find_K(vec_pattern.format(2), L, T)
-    K_over = args.K
+if not Simulation.skip_analysis:
+    T, L = find_T_and_L(Simulation.vec_pattern.format(2))
+    K = find_K(Simulation.vec_pattern.format(2), L, T)
+    K_over = Simulation.K
     if K_over:
         print(f'OVERRIDING  K = {K} WITH: K = {K_over}')
         K = K_over
 
     all_res = []
 
-    outgroups = args.outgroup
-
     for boot in range(-1, BOOTRUNS):
-        boot_res = run_once(boot,outgroups,K,T,asd_pattern, vec_pattern,labels_file)
+        boot_res = run_once(boot, Simulation.outgroups, K, T, Simulation.asd_pattern, Simulation.vec_pattern, Simulation.labels_file)
         for res in boot_res:
             all_res.append(res)
 
 
-    with open(os.path.join(output_folder, "all_extrapolated_distances.txt"), 'w') as f:
+    with open(os.path.join(Simulation.output_folder, "all_extrapolated_distances.txt"), 'w') as f:
         np.savetxt(f, all_res)
 
