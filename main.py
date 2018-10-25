@@ -38,11 +38,11 @@ if not Simulation.simulation and not Simulation.skip_preprocessing:
 if not Simulation.skip_calculate_matrix:
     if Simulation.simulation:
         scrm_file_clean_result = Simulation.snps_pattern
-        asd_main(1, Simulation.snps_pattern, Simulation.asd_pattern.format(1), Simulation.chromosomes, Simulation.bootsize, Simulation.labels_file, txt_format=True)
-        asd_main(2, Simulation.snps_pattern, Simulation.asd_pattern.format(2), Simulation.chromosomes, Simulation.bootsize, Simulation.labels_file, txt_format=True)
+        asd_main(1, Simulation,  txt_format=True)
+        asd_main(2, Simulation,  txt_format=True)
     else:
-        asd_main(1, Simulation.output_file, Simulation.asd_pattern.format(1), Simulation.chromosomes, Simulation.bootsize, Simulation.labels_file)
-        asd_main(2, Simulation.output_file, Simulation.asd_pattern.format(2), Simulation.chromosomes, Simulation.bootsize, Simulation.labels_file)
+        asd_main(1, Simulation)
+        asd_main(2, Simulation)
 
     calc_mds(Simulation.asd_pattern.format(1), Simulation.vec_pattern.format(1))
     calc_mds(Simulation.asd_pattern.format(2), Simulation.vec_pattern.format(2))

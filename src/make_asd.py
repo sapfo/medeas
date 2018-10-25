@@ -91,11 +91,7 @@ def process(data: 'np.ndarray[int]',
     return dists, norms
 
 
-def  asd_main(pp: int, name: str, out_name: str, chromosomes: range,
-             bootsize: int,
-             label: str,
-             txt_format: bool = False
-             ) -> None:
+def  asd_main(pp: int, Simulation,txt_format: bool = False) -> None:
     """Calculate the distance matrix with Minkowski parameter 'pp'.
 
     'name' is the input file name (or format string) with SNP data.
@@ -110,15 +106,12 @@ def  asd_main(pp: int, name: str, out_name: str, chromosomes: range,
     # Need to think how to avoid copying ``data`` on forking.
     # Maybe process input file in chunks?
     # On POSIX everything is already fine because of "copy-on-write"
-    def test_func(dst: int) -> int:
-        if dst > 1:
-            return dst ** 2
-        else:
-            return 0
 
-    dist_func = np.vectorize(test_func)
-    dist_func = np.abs
-    dist_func = np.square
+    out_name =  Simulation.asd_pattern.format(pp)
+    name =  Simulation.snps_pattern
+    chromosomes =  Simulation.chromosomes
+    bootsize = Simulation.bootsize
+    label = Simulation.labels_file
     dist_func = lambda x: np.abs(x) ** pp
 
     # ---------- constants
