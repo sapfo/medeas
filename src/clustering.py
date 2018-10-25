@@ -76,15 +76,7 @@ def find_tree(npop: int, asd_file: str,
     # TODO: Refactor functions in this file to be more logical instead of
     # carrying over unrelated info.
 
-    res_labels = np.array(res_labels)
-    cond_lab = np.zeros(labs.shape)
-    for outg in outgroups:
-        cond_lab = np.logical_or(cond_lab, res_labels == outg)
-    outg_labs = labs[np.where(cond_lab)]
-    count = Counter(outg_labs)
-    if len(outg_labs):
-        outgroup = count.most_common()[0][0]
-        outgroup = hex(outgroup)[-1].upper()
+
 
     with open(asd_file, 'rb') as f:
         delta = pickle.load(f)
@@ -121,13 +113,7 @@ def find_tree(npop: int, asd_file: str,
         tree = read(StringIO('(0:0.1, 1:0.1);'), format='newick', into=TreeNode)
         return tree, ns, blocks
     tree = nj(dm)
-
-    rt = TreeNode(name='rt')
-    temp = tree.find(outgroup).parent
-    temp.append(rt)
-    rt.append(tree.find(outgroup))
-    new_tree = tree.root_at('rt')
-
+    new_tree = tree.root_at_midpoint()
     print(new_tree.ascii_art())
     return new_tree, ns, blocks
 
