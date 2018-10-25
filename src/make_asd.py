@@ -93,6 +93,7 @@ def process(data: 'np.ndarray[int]',
 
 def  asd_main(pp: int, name: str, out_name: str, chromosomes: range,
              bootsize: int,
+             label: str,
              txt_format: bool = False
              ) -> None:
     """Calculate the distance matrix with Minkowski parameter 'pp'.
@@ -195,9 +196,6 @@ def  asd_main(pp: int, name: str, out_name: str, chromosomes: range,
         for j in range(i + 1, N):
             delta[i, j] = delta[j, i] = tot_dists[i, j] / tot_norms[i, j]
     delta = delta ** (1 / pp)
-    if TESTING:
-        plt.pcolor(delta)
-        plt.show()
     with open(out_name, 'wb') as f:
         pickle.dump(delta, f)
 
@@ -216,36 +214,54 @@ def  asd_main(pp: int, name: str, out_name: str, chromosomes: range,
             for j in range(i + 1, N):
                 delta[i, j] = delta[j, i] = tot_dists[i, j] / tot_norms[i, j]
         delta = delta ** (1 / pp)
-        if TESTING:
-            plt.pcolor(delta)
-            plt.show()
         with open(out_name + f'.boot.{boot}', 'wb') as f:
             pickle.dump(delta, f)
 
     print('Distance matrix computed')
     if TESTING:
-        plt.pcolor(delta)
-        plt.colorbar()
-        plt.xlabel('i individual')
-        plt.ylabel('j individual')
-        plt.title('Distance matrix')
-        flat = delta.reshape(N ** 2, )
+        with open(label) as f:
+            lines = f.readlines()
+
+        labels_individual = np.array([l.split()[0] for l in lines])
+        sorted_labels_individual = np.sort(labels_individual)
+        label_pop = np.unique(labels_individual)
+        sorting_index = np.argsort(labels_individual)
+        individual_per_pop = [np.sum(labels_individual == label) for label in np.sort(label_pop)]
+        end_position = np.cumsum(individual_per_pop)
+        start_position = np.insert(end_position, 0, 0, axis=0)
+        print(start_position)
+        delta = delta[sorting_index, :]
+        delta = delta[:, sorting_index]
         plt.figure()
-        plt.hist(flat, 50)
-        plt.title('Distances')
+        plt.imshow(delta)
+        plt.tick_params(bottom=False, top=True, labeltop=True, labelbottom=False)
+        plt.xticks(start_position, np.sort(label_pop), rotation='vertical')
+        plt.yticks(start_position, np.sort(label_pop))
+        plt.savefig("plot_distance.pdf")
         plt.figure()
-        norm_counts = tot_norms.reshape((N ** 2,))
-        plt.hist(norm_counts, 50)
-        plt.title('SNP counts between pairs')
-        plt.figure()
-        plt.pcolor(tot_dists)
-        plt.colorbar()
-        plt.title('Unnormalized distances')
-        plt.figure()
-        plt.pcolor(tot_norms)
-        plt.colorbar()
-        plt.title('Norms')
-        plt.show()
+
+        for population_label in label_pop:
+            population_position = sorted_labels_individual == population_label
+            pop_mat = delta[np.ix_(population_position, population_position)]
+            all_pop_value = pop_mat.flatten()
+            all_pop_value = all_pop_value[all_pop_value > 0.00000001]
+            plt.hist(all_pop_value, 15, label=population_label, density=1, alpha=0.75)
+        plt.legend()
+        plt.savefig("Time_per_pop.pdf")
+
+        nb_population = len(label_pop)
+        for pop1_index in range(nb_population):
+            plt.figure()
+            for pop2_index in range(nb_population):
+                population_position1 = labels_individual == label_pop[pop1_index]
+                population_position2 = labels_individual == label_pop[pop2_index]
+                pop_mat = delta[np.ix_(population_position1, population_position2)]
+                all_pop_value = pop_mat.flatten()
+                all_pop_value = all_pop_value[all_pop_value > 0.00000001]
+                plt.hist(all_pop_value, 20, label=label_pop[pop1_index] + "-" + label_pop[pop2_index], density=1,
+                         alpha=0.5)
+            plt.legend(ncol=2)
+            plt.savefig(f"time_pop_{label_pop[pop1_index]}.pdf")
 
 
 def inv_filter(p1, p2, p3):  # This should be moved to other place actually
