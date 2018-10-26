@@ -17,7 +17,7 @@ filtering for real data:
 "-sparse
 
 "-asd: makes the distance matrix
-"asd_main(p=1,2, etc)
+"compute_asd_matrix(p=1,2, etc)
 
 "-analyze: the actual analyses
 

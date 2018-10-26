@@ -12,7 +12,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 from src.simulation import SimulationInfo
-from src.make_asd import asd_main
+from src.make_asd import compute_asd_matrix
 from src.mds import calc_mds
 from src.lambda_analyze import find_T_and_L, find_K
 from single_pass import run_once
@@ -30,12 +30,11 @@ if not simulation.simulation and not simulation.skip_preprocessing:
 
 if not simulation.skip_calculate_matrix:
     if simulation.simulation:
-        scrm_file_clean_result = simulation.snps_pattern
-        asd_main(1, simulation, txt_format=True)
-        asd_main(2, simulation, txt_format=True)
+        compute_asd_matrix(1, simulation, txt_format=True)
+        compute_asd_matrix(2, simulation, txt_format=True)
     else:
-        asd_main(1, simulation)
-        asd_main(2, simulation)
+        compute_asd_matrix(1, simulation)
+        compute_asd_matrix(2, simulation)
 
     calc_mds(simulation.asd_pattern.format(1), simulation.vec_pattern.format(1))
     calc_mds(simulation.asd_pattern.format(2), simulation.vec_pattern.format(2))

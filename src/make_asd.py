@@ -88,7 +88,7 @@ def process(data: 'np.ndarray[int]',
     return dists, norms
 
 
-def  asd_main(pp: int, simulation, txt_format: bool = False) -> None:
+def  compute_asd_matrix(pp: int, simulation, txt_format: bool = False) -> None:
     """Calculate the distance matrix with Minkowski parameter 'pp'.
 
     'name' is the input file name (or format string) with SNP data.
@@ -235,4 +235,4 @@ if __name__ == '__main__':
     name = sys.argv[1]  # C:\Users\levkivskyi\PycharmProjects\medeas\test\...
     out_name = f'out.pp.{pp}.asd'
 
-    asd_main(pp, name, out_name)
+    compute_asd_matrix(pp, name, out_name)
