@@ -25,8 +25,8 @@ TODO: codes to strings in hardfilt
 TODO: recalculate everything at every bootstrap run
 
 
-the user cannot use the p currently (marchenko pastur p=2 ONLY, for clustering its unclear but currently only p=1)
-
+the user cannot use the p currently (marchenko pastur p=2 ONLY, for clustering its unclear but currently only p=2)
+For diploid data (Ana's owl) it seems that p=2 do a better job at clustering. 
 
 
 src

@@ -27,7 +27,7 @@ def perform_clustering(npop: int,
     eigenvalues read from file, and labels read from file.
     """
 
-    with open(simulation.vec_pattern.format(1), 'rb') as f:
+    with open(simulation.vec_pattern.format(2), 'rb') as f:
         lambdas, vecs = pickle.load(f)
     N = len(lambdas)
 
