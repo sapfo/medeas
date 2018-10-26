@@ -6,7 +6,7 @@ import matplotlib.lines as mlines
 
 
 
-class simulation_info(object):
+class SimulationInfo(object):
 
     def __init__(self):
         parser = argparse.ArgumentParser()

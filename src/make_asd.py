@@ -88,7 +88,7 @@ def process(data: 'np.ndarray[int]',
     return dists, norms
 
 
-def  asd_main(pp: int, Simulation,txt_format: bool = False) -> None:
+def  asd_main(pp: int, simulation, txt_format: bool = False) -> None:
     """Calculate the distance matrix with Minkowski parameter 'pp'.
 
     'name' is the input file name (or format string) with SNP data.
@@ -104,11 +104,11 @@ def  asd_main(pp: int, Simulation,txt_format: bool = False) -> None:
     # Maybe process input file in chunks?
     # On POSIX everything is already fine because of "copy-on-write"
 
-    out_name =  Simulation.asd_pattern.format(pp)
-    name =  Simulation.snps_pattern
-    chromosomes =  Simulation.chromosomes
-    bootsize = Simulation.bootsize
-    label = Simulation.labels_file
+    out_name =  simulation.asd_pattern.format(pp)
+    name =  simulation.snps_pattern
+    chromosomes =  simulation.chromosomes
+    bootsize = simulation.bootsize
+    label = simulation.labels_file
     dist_func = lambda x: np.abs(x) ** pp
 
     # ---------- constants
@@ -144,7 +144,7 @@ def  asd_main(pp: int, Simulation,txt_format: bool = False) -> None:
         start_i = 0
         end_i = bootsize - len(remainder) if remainder is not None else bootsize
         while end_i <= len(data):
-            if Simulation.output_level >= 1:
+            if simulation.output_level >= 1:
                 print(f'Processing site {start_i}')
             chunk = data[start_i:end_i]
             if remainder is not None and start_i == 0:
@@ -193,7 +193,7 @@ def  asd_main(pp: int, Simulation,txt_format: bool = False) -> None:
 
     clen = len(chunk_data)
     print(f'NUMBER OF BLOCKS: {clen}')
-    for boot in range(Simulation.bootstrap_number):
+    for boot in range(simulation.bootstrap_number):
         chunk_res = chunk_data.copy()
         for i in range(clen):
             chunk_res[i] = chunk_data[randint(0, clen - 1)]
@@ -208,7 +208,7 @@ def  asd_main(pp: int, Simulation,txt_format: bool = False) -> None:
             pickle.dump(delta, f)
 
     print('Distance matrix computed')
-    Simulation.plot_distance_matrix(delta)
+    simulation.plot_distance_matrix(delta)
 
 
 
