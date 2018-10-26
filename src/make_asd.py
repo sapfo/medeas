@@ -13,9 +13,6 @@ import pickle
 from random import randint
 import matplotlib.pyplot as plt
 
-from options import TESTING
-from options import BOOTRUNS
-from options import VERBOSE
 
 NPROC = cpu_count()
 
@@ -147,7 +144,7 @@ def  asd_main(pp: int, Simulation,txt_format: bool = False) -> None:
         start_i = 0
         end_i = bootsize - len(remainder) if remainder is not None else bootsize
         while end_i <= len(data):
-            if VERBOSE >= 1:
+            if Simulation.output_level >= 1:
                 print(f'Processing site {start_i}')
             chunk = data[start_i:end_i]
             if remainder is not None and start_i == 0:
@@ -196,7 +193,7 @@ def  asd_main(pp: int, Simulation,txt_format: bool = False) -> None:
 
     clen = len(chunk_data)
     print(f'NUMBER OF BLOCKS: {clen}')
-    for boot in range(BOOTRUNS):
+    for boot in range(Simulation.bootstrap_number):
         chunk_res = chunk_data.copy()
         for i in range(clen):
             chunk_res[i] = chunk_data[randint(0, clen - 1)]

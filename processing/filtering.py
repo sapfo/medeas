@@ -9,7 +9,7 @@ Created on Mon Jun 19 16:27:49 2017
 import numpy as np
 from typing import List
 import pickle
-from options import FST
+
 
 
 

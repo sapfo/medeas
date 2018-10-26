@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 from typing import Tuple
 from collections import defaultdict
 import pickle
-from options import TESTING
 
 freqs = defaultdict(list)
 bars = defaultdict(list)
@@ -53,7 +52,7 @@ def calculate_freqs(pattern: str, outpattern: str,chromosome_range: range) -> No
         with open(outpattern.format(group) + '.freqs', 'wb') as f:
             pickle.dump(total_freqs[group], f)
 
-    if TESTING:
+    if True:
         bins = np.arange(0.5, 119.5, 1)
         colors = ['black', 'blue', 'green', 'red']
         for group in range(1, 5):

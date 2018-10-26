@@ -4,8 +4,6 @@ from typing import Sequence, Tuple
 import matplotlib.pyplot as plt
 import pickle
 
-from options import TESTING
-
 
 def dens(x: float, a: float, b: float) -> float:
     """Integral of Marchenko-Pastur distribution function on interval
@@ -34,7 +32,7 @@ def find_TW(lambdas: Sequence[float], L: float, T: float, N: int) -> float:
     return s
 
 
-def find_T_and_L(file: str) -> Tuple[float, float]:
+def find_T_and_L(simulation, file: str) -> Tuple[float, float]:
     """Find total tree length T and effective number of markers L using
     the bulk eigenvalues from eigensystem stored in (pickled) 'file'.
     """
@@ -64,7 +62,7 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
                            p0 = (1, N+1), bounds=([0.1, N], [100, 1000*N]))
 
     # popt[1] = 2000
-    if TESTING:
+    if simulation.output_level > 0:
         plt.close()
         plt.plot(lambdas_s, range(len(lambdas_s)))
         lambdas_se = np.linspace(lambdas.min(), lambdas.max(), 5000)
@@ -84,7 +82,7 @@ def find_T_and_L(file: str) -> Tuple[float, float]:
 # Tracy-Widom
 # ====================
 
-def find_K(file: str, L: float, T: float) -> int:
+def find_K(file: str, L: float, T: float, simulation) -> int:
     """Find the number of clusters K using the Tracy-Widom statistics for
     large eigenvalues. 'L' is the effective number of markers, 'T' is
     the total tree length, the eigensystem is read from file named 'file'.
@@ -117,7 +115,7 @@ def find_K(file: str, L: float, T: float) -> int:
         i += 1
         lambdas = lambdas[1:]
 
-    if TESTING:
+    if simulation.output_level >= 1:
         lambdas = list(sorted(lambdas0, reverse=True))
         lambdas = np.array(lambdas)
         plt.figure()

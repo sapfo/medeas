@@ -16,9 +16,7 @@ from collections import Counter
 from random import uniform
 
 OFFSET = 2
-from options import TESTING
-from options import VERBOSE
-from src.plot import plot_mds
+
 
 def perform_clustering(npop: int,
                        simulation
@@ -53,7 +51,7 @@ def perform_clustering(npop: int,
     arr = np.array(arr)
     arr = arr.T
 
-    if VERBOSE >= 1:
+    if simulation.output_level >= 1:
         print('clustering will be performed on a ' + str(arr.shape) + ' matrix')
 
     clusterer = AC(n_clusters=npop, compute_full_tree=True)
@@ -65,7 +63,7 @@ def perform_clustering(npop: int,
 def find_tree(npop: int, asd_file: str,
               labs: 'np.ndarray[int]',
               arr: 'np.ndarray[float]',
-              outgroups: List[str], res_labels: List[str]
+              simulation,
               ) -> Tuple[TreeNode, 'np.ndarray[int]', 'np.ndarray[float]']:
     """Find tree topology using the centers of mass of clusters.
 
@@ -74,8 +72,7 @@ def find_tree(npop: int, asd_file: str,
     and the bloks of original distance matrix that correspond to given
     population pairs (for further determination of fitting window).
     """
-    # TODO: Refactor functions in this file to be more logical instead of
-    # carrying over unrelated info.
+
 
 
 
@@ -95,16 +92,16 @@ def find_tree(npop: int, asd_file: str,
     for i in range(npop):
         for j in range(npop):
             blocks[i, j] = delta[np.where(labs == i)[0]].T[np.where(labs == j)[0]]
-    if VERBOSE >= 1:
+    if simulation.output_level >= 1:
         print(coords)
         print(coords.shape)
 
     for i in range(npop):
         for j in range(npop):
             ds[i, j] = np.sqrt(np.sum((coords[i] - coords[j])**2))
-    if VERBOSE >= 1:
+    if simulation.output_level >= 1:
         print(ds)
-    if TESTING:
+    if simulation.output_level:
         plt.pcolor(ds)
         plt.show()
 
@@ -115,6 +112,8 @@ def find_tree(npop: int, asd_file: str,
         return tree, ns, blocks
     tree = nj(dm)
     new_tree = tree.root_at_midpoint()
+    print(tree)
+    print(new_tree)
     print(new_tree.ascii_art())
     return new_tree, ns, blocks
 
@@ -122,7 +121,8 @@ def find_tree(npop: int, asd_file: str,
 def find_distances(npop: int, T: float,
                    new_tree: TreeNode, ns: 'np.ndarray[int]',
                    lambdas: 'np.ndarray[float]',
-                   blocks: 'np.ndarray[np.ndarray[float]]'
+                   blocks: 'np.ndarray[np.ndarray[float]]',
+                   simulation
                    ) -> Tuple[OptimizeResult, List[Tuple[int, int]]]:
     """Find split times from the tree topology."""
     d_ind = np.zeros((npop, npop), dtype='int16')
@@ -158,7 +158,7 @@ def find_distances(npop: int, T: float,
     d_ind = d_ind + d_ind.T
     for i in range(npop):
         d_ind[i, i] = -1
-    if VERBOSE == 2:
+    if simulation.output_level == 2:
         print(d_ind)
         print(constraints)
 
@@ -173,7 +173,7 @@ def find_distances(npop: int, T: float,
                     D[i, j] = Dv[d_ind[i, j]]
         return D
 
-    if VERBOSE == 2:
+    if simulation.output_level == 2:
         print('------------')
         print(ns)
         Dv = range(npop, 0, -1)
@@ -193,7 +193,7 @@ def find_distances(npop: int, T: float,
                 b[i, j] = ns[i] * ((D[i, j] + 1)**2 - delta[i] - delta[j] + delta_0)
         return b
 
-    if VERBOSE == 2:
+    if simulation.output_level == 2:
         b = make_b(D)
         print('------------')
         print(b)
@@ -227,7 +227,7 @@ def find_distances(npop: int, T: float,
     for i, (mn, mx) in enumerate(zip(mins, maxs)):
         inits[i] = uniform(mn, mx)
 
-    if VERBOSE == 2:
+    if simulation.output_level == 2:
        print('Inits:', inits)
        print('Mins:', mins)
        print('Maxs:', maxs)

@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
+
+
 class simulation_info(object):
 
     def __init__(self):
@@ -27,6 +29,10 @@ class simulation_info(object):
         parser.add_argument("-bws", "--boot_window_size",
                             help="How many markers do we have in each bootstraping windows",
                             type=int, default=100)
+        parser.add_argument("-bsn","--bootstrap_number",
+                            help="How many bootstrap do we perform",
+                            type=int, default=10
+                            )
 
 
         parser.add_argument("--simulation", help="Does the data come from a simulation",
@@ -38,6 +44,10 @@ class simulation_info(object):
                             action="store_true")
         parser.add_argument("--skip_analysis", help="Prepare the data without performing the actual analysis on them",
                             action="store_true")
+
+        parser.add_argument("--output_level", help="How many information should be printed & saved: 0 -minimal, 1 - conventional, 2 - most of it",
+                            type=int, default=1)
+
         args = parser.parse_args()
         self.ancestry_pattern = args.ancestry_file
 
@@ -52,6 +62,8 @@ class simulation_info(object):
         self.skip_calculate_matrix = args.skip_calculate_matrix
         self.simulation = args.simulation
         self.skip_analysis = args.skip_analysis
+        self.bootstrap_number = args.bootstrap_number
+        self.output_level = args.output_level
 
         asd_folder = "asd_matrices"
         mds_folder = "MDS_eigensystem"
