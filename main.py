@@ -63,7 +63,7 @@ if not Simulation.skip_analysis:
     Simulation.all_res = []
 
     for boot in range(-1, BOOTRUNS):
-        boot_res = run_once(boot, Simulation.outgroups, K, T, Simulation.asd_pattern, Simulation.vec_pattern, Simulation.labels_file)
+        boot_res = run_once(boot, K, T, Simulation)
         for res in boot_res:
             Simulation.all_res.append(res)
 

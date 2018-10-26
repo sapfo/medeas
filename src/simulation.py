@@ -2,10 +2,9 @@ import argparse
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 
 class simulation_info(object):
-
-
 
     def __init__(self):
         parser = argparse.ArgumentParser()
@@ -28,6 +27,7 @@ class simulation_info(object):
         parser.add_argument("-bws", "--boot_window_size",
                             help="How many markers do we have in each bootstraping windows",
                             type=int, default=100)
+
 
         parser.add_argument("--simulation", help="Does the data come from a simulation",
                             action="store_true")
@@ -63,6 +63,10 @@ class simulation_info(object):
                 os.makedirs(path)
         self.asd_pattern = os.path.join(asd_full_path, 'p{}.asd.data')
         self.vec_pattern = os.path.join(mds_full_path, 'p{}.vecs.data')
+        with open(self.labels_file) as f:
+            lines = f.readlines()
+
+        self.labels = [l.split()[0] for l in lines]  # + ['WCD'] * 7
 
 
 
@@ -114,3 +118,41 @@ class simulation_info(object):
                          alpha=0.5)
             plt.legend(ncol=2)
             plt.savefig(f"time_pop_{label_pop[pop1_index]}.pdf")
+
+
+    def plot_mds(self, arr, labels_inferred):
+        """Plot the MDS plot
+        """
+        # TODO: autogenerate nice summary plot depending on 'npop'
+        label_given = np.array(self.labels)
+        label_given_index = np.copy(label_given)
+        for index_label, label in enumerate(np.unique(label_given)):
+            label_given_index[label_given == label] = index_label
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        colors = prop_cycle.by_key()['color']
+        markers = [".", "v", "*", "+", "x", "2", "p", "^", "s"]
+        for p in range(len(np.unique(labels_inferred))+2):
+            for q in range(p+1,len(np.unique(labels_inferred))+2):
+                fig, ax = plt.subplots(figsize=(15,10))
+                for population_index, population_name in enumerate(np.unique(label_given)):
+                    position_population = np.where(population_name == label_given)
+                    index_colors = labels_inferred[position_population]
+                    color_value = [colors[index_color] for index_color in index_colors]
+                    markers_value = markers[population_index]
+                    ax.scatter(arr.T[p,position_population].ravel(), arr.T[q, position_population].ravel(), c = color_value, marker = markers_value, s=100)
+                plt.legend(np.unique(label_given))
+                leg = ax.get_legend()
+                for point in leg.legendHandles:
+                    point.set_color('black')
+                dir_plot = os.path.join(self.output_folder, "mds_plot")
+                if not os.path.isdir(dir_plot):
+                    os.mkdir(dir_plot)
+                markers_shape = [mlines.Line2D([], [], color='black', marker=marker_shape, linestyle='None') for marker_shape in markers]
+                markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
+                legend1 = plt.legend(markers_shape,np.unique(label_given) , loc=1,title="True population")
+                legend2 = plt.legend(markers_color,np.unique(labels_inferred), loc=2,title="Inferred population")
+                ax.add_artist(legend1)
+                ax.add_artist(legend2)
+                ax.set_xlabel(f'PC. {p+1}')
+                ax.set_ylabel(f'PC. {q+1}')
+                fig.savefig(os.path.join(dir_plot, f'mds_axis{p+1}_{q+1}.pdf'))

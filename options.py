@@ -1,6 +1,6 @@
 import options
 
-options.TESTING = False  # Shows some debugging info and many plots
+options.TESTING = True  # Shows some debugging info and many plots
 options.FST = False  # Also calculates F_ST
 options.BOOTRUNS = 10  # How many bootstrap runs we need.
 options.SIMULATION = False  # Are we running on simulated datas

@@ -21,7 +21,7 @@ from options import VERBOSE
 from src.plot import plot_mds
 
 def perform_clustering(npop: int,
-                       vectors_file: str, labels_file: str
+                       simulation
                        ) -> Tuple['np.ndarray[int]', 'np.ndarray[float]',
                                   'np.ndarray[float]', List[str]]:
     """Perform agglomerative clustering for 'npop' clusters.
@@ -30,11 +30,12 @@ def perform_clustering(npop: int,
     Return found labels, distances from large eigenvalues,
     eigenvalues read from file, and labels read from file.
     """
-    with open(vectors_file, 'rb') as f:
+
+    with open(simulation.vec_pattern.format(1), 'rb') as f:
         lambdas, vecs = pickle.load(f)
     N = len(lambdas)
 
-    with open(labels_file) as f:
+    with open(simulation.labels_file) as f:
         lines = f.readlines()
 
     labels = [l.split()[0] for l in lines]  # + ['WCD'] * 7
@@ -57,7 +58,7 @@ def perform_clustering(npop: int,
 
     clusterer = AC(n_clusters=npop, compute_full_tree=True)
     lab_infered = clusterer.fit_predict(arr)
-    plot_mds(arr,labels,lab_infered,os.path.dirname(labels_file))
+    simulation.plot_mds(arr, lab_infered)
     return lab_infered, arr, lambdas, res_labels
 
 
