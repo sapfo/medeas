@@ -29,15 +29,12 @@ if not simulation.simulation and not simulation.skip_preprocessing:
 
 
 if not simulation.skip_calculate_matrix:
-    if simulation.simulation:
-        compute_asd_matrix(1, simulation, txt_format=True)
-        compute_asd_matrix(2, simulation, txt_format=True)
-    else:
-        compute_asd_matrix(1, simulation)
-        compute_asd_matrix(2, simulation)
+    compute_asd_matrix(1, simulation, txt_format=simulation.simulation)
+    compute_asd_matrix(2, simulation, txt_format=simulation.simulation)
 
     calc_mds(simulation.asd_pattern.format(1), simulation.vec_pattern.format(1))
     calc_mds(simulation.asd_pattern.format(2), simulation.vec_pattern.format(2))
+
     for boot in range(simulation.bootstrap_number):
         suffix = f'.boot.{boot}'
         calc_mds(simulation.asd_pattern.format(1) + suffix, simulation.vec_pattern.format(1) + suffix)

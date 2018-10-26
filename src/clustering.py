@@ -12,16 +12,14 @@ from skbio import read
 from scipy.optimize import OptimizeResult, least_squares  # or root?
 
 from typing import Tuple, List
-from collections import Counter
 from random import uniform
 
 OFFSET = 2
 
-
 def perform_clustering(npop: int,
                        simulation
                        ) -> Tuple['np.ndarray[int]', 'np.ndarray[float]',
-                                  'np.ndarray[float]', List[str]]:
+                                  'np.ndarray[float]']:
     """Perform agglomerative clustering for 'npop' clusters.
 
     'vectors_file' and 'labels_file' are names of files to read data.
@@ -33,48 +31,36 @@ def perform_clustering(npop: int,
         lambdas, vecs = pickle.load(f)
     N = len(lambdas)
 
-    with open(simulation.labels_file) as f:
-        lines = f.readlines()
-
-    labels = [l.split()[0] for l in lines]  # + ['WCD'] * 7
-
-
-    res_labels = labels.copy()
-
-    arr = np.hstack((lambdas.reshape((N, 1)), vecs.T)).copy()
-    arr = sorted(arr, key=lambda x: x[0], reverse=True)
-    for i, v in enumerate(arr.copy()):
-        arr[i] = np.sqrt(v[0])*v[1:]
+    coordinates = np.hstack((lambdas.reshape((N, 1)), vecs.T)).copy()
+    coordinates = sorted(coordinates, key=lambda x: x[0], reverse=True)
+    for i, v in enumerate(coordinates.copy()):
+        print(v[0])
+        coordinates[i] = np.sqrt(v[0])*v[1:]
 
 
-    arr = arr[:npop+OFFSET]
-    arr = np.array(arr)
-    arr = arr.T
+    coordinates = coordinates[:npop + OFFSET]
+    coordinates = np.array(coordinates)
+    coordinates = coordinates.T
 
     if simulation.output_level >= 1:
-        print('clustering will be performed on a ' + str(arr.shape) + ' matrix')
+        print('clustering will be performed on a ' + str(coordinates.shape) + ' matrix')
 
     clusterer = AC(n_clusters=npop, compute_full_tree=True)
-    lab_infered = clusterer.fit_predict(arr)
-    simulation.plot_mds(arr, lab_infered)
-    return lab_infered, arr, lambdas, res_labels
+    lab_infered = clusterer.fit_predict(coordinates)
+    simulation.plot_mds(coordinates, lab_infered)
+    return lab_infered, coordinates, lambdas
 
 
 def find_tree(npop: int, asd_file: str,
-              labs: 'np.ndarray[int]',
+              inferred_labels: 'np.ndarray[int]',
               arr: 'np.ndarray[float]',
               simulation,
               ) -> Tuple[TreeNode, 'np.ndarray[int]', 'np.ndarray[float]']:
     """Find tree topology using the centers of mass of clusters.
-
-    'labs' contains assigned labels. 'asd_file' is the name of the file to read
-    original distance matrix. Return the neighbor join tree, population sizes,
+    'inferred_labels' contains assigned labels. Return the neighbor join tree, population sizes,
     and the bloks of original distance matrix that correspond to given
     population pairs (for further determination of fitting window).
     """
-
-
-
 
     with open(asd_file, 'rb') as f:
         delta = pickle.load(f)
@@ -83,15 +69,15 @@ def find_tree(npop: int, asd_file: str,
     coords = np.zeros((npop, npop+OFFSET))
     ns = np.zeros((npop,))
 
-    for i in set(labs):
-        coords[i, :] = np.mean(arr[np.where(labs == i)[0], :], axis=0)
-        ns[i] = len(np.where(labs == i)[0])
+    for i in set(inferred_labels):
+        coords[i, :] = np.mean(arr[np.where(inferred_labels == i)[0], :], axis=0)
+        ns[i] = len(np.where(inferred_labels == i)[0])
 
     blocks = np.zeros((npop, npop), dtype='object')
 
     for i in range(npop):
         for j in range(npop):
-            blocks[i, j] = delta[np.where(labs == i)[0]].T[np.where(labs == j)[0]]
+            blocks[i, j] = delta[np.where(inferred_labels == i)[0]].T[np.where(inferred_labels == j)[0]]
     if simulation.output_level >= 1:
         print(coords)
         print(coords.shape)
@@ -112,8 +98,6 @@ def find_tree(npop: int, asd_file: str,
         return tree, ns, blocks
     tree = nj(dm)
     new_tree = tree.root_at_midpoint()
-    print(tree)
-    print(new_tree)
     print(new_tree.ascii_art())
     return new_tree, ns, blocks
 
@@ -245,12 +229,10 @@ def find_distances(npop: int, T: float,
         #Even if we expect the eigenvalue to be real, the "numerical" tiny little complex part cause problem for some simulations
         return np.real(real_vals - ls)
 
-    # TODO: find more solutions for D using different initial points (grid(-) or random(+))
     res = least_squares(dev, inits, bounds=(mins, maxs), gtol=1e-15)
     return res, constraints
 
 
-# TODO: implement validations: positive values and order
 def validate_dists(dists: 'np.ndarray[float]',
                    constraints: List[Tuple[int, int]]) -> bool:
     """Verify if the given split times satisfy the 'constrains' obtained from

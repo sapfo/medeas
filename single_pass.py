@@ -8,11 +8,10 @@ Created on Thu Sep 20 15:29:37 2018
 from src.clustering import perform_clustering, find_tree, find_distances, validate_dists
 
 def run_once(boot: int, K: int, T: float, simulation) -> None:
-    outgroups = simulation.outgroups
     suffix = f'.boot.{boot}' if boot > -1 else ''
-    labels, short_array, lambdas, res_labels = perform_clustering(K, simulation)
+    inferred_labels, coordinates, lambdas = perform_clustering(K, simulation)
 
-    tree, ns, blocks = find_tree(K, simulation.asd_pattern.format(1) + suffix, labels, short_array, simulation)
+    tree, ns, blocks = find_tree(K, simulation.asd_pattern.format(1) + suffix, inferred_labels, coordinates, simulation)
 
     res = []
     for _ in range(min(10 + 2 ** K, 100)):
