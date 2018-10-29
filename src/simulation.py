@@ -12,7 +12,7 @@ class SimulationInfo(object):
         parser = argparse.ArgumentParser()
 
         parser.add_argument("-sf", "--snps_file",
-                            help="Prepare the data wihtout performing the actual analysis on them",
+                            help="The name of the file from which the pattern should be read. ",
                             required=True)
         parser.add_argument("-lf", "--labels_file", help="File containing the labels",
                             required=True)
@@ -25,7 +25,6 @@ class SimulationInfo(object):
         parser.add_argument("--outgroup", help="Who is the outgroup in your data", nargs='+')
 
         parser.add_argument("-af", "--ancestry_file", help="File containing the ancestry of each locus")
-
         parser.add_argument("-bws", "--boot_window_size",
                             help="How many markers do we have in each bootstraping windows",
                             type=int, default=100)
@@ -39,10 +38,6 @@ class SimulationInfo(object):
                             action="store_true")
         parser.add_argument("--skip_calculate_matrix",
                             help="Skip the computation of the distance matrices and the related MDS matrix",
-                            action="store_true")
-        parser.add_argument("--skip_preprocessing", help="Directly proceed to analysis without preparing the data",
-                            action="store_true")
-        parser.add_argument("--skip_analysis", help="Prepare the data without performing the actual analysis on them",
                             action="store_true")
 
         parser.add_argument("--output_level", help="How many information should be printed & saved: 0 -minimal, 1 - conventional, 2 - most of it",
@@ -61,7 +56,6 @@ class SimulationInfo(object):
         self.outgroups = args.outgroup
         self.skip_calculate_matrix = args.skip_calculate_matrix
         self.simulation = args.simulation
-        self.skip_analysis = args.skip_analysis
         self.bootstrap_number = args.bootstrap_number
         self.output_level = args.output_level
 
