@@ -109,7 +109,7 @@ def find_distances(npop: int, T: float,
                    simulation
                    ) -> Tuple[OptimizeResult, List[Tuple[int, int]]]:
     """Find split times from the tree topology."""
-    d_ind = np.zeros((npop, npop), dtype='int16')
+    d_ind = -np.ones((npop, npop), dtype='int16')
     constraints = []
 
     def add_indices(tr: TreeNode, current: int = 0) -> None:
@@ -127,21 +127,19 @@ def find_distances(npop: int, T: float,
             r_ind = list(map(lambda x: int(x.name), right.tips()))
         for i in l_ind:
             for j in r_ind:
-                d_ind[i, j] = current
+                d_ind[i, j] = d_ind[j, i] = current
         previous = current
         current += 1
         if not left.is_tip():
             constraints.append((current, previous))
             add_indices(left, current)
-            current += 1
+            current += 1 + sum([1 for _ in left.non_tips()])
         if not right.is_tip():
             constraints.append((current, previous))
             add_indices(right, current)
 
     add_indices(new_tree)
-    d_ind = d_ind + d_ind.T
-    for i in range(npop):
-        d_ind[i, i] = -1
+
     if simulation.output_level == 2:
         print(d_ind)
         print(constraints)
