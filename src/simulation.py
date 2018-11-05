@@ -64,6 +64,7 @@ class SimulationInfo(object):
         asd_full_path = os.path.join(self.output_folder,asd_folder)
         mds_full_path = os.path.join(self.output_folder,mds_folder)
         all_path = [asd_full_path,mds_full_path]
+        print(os.getcwd())
         for path in all_path:
             if not os.path.exists(path):
                 os.makedirs(path)
@@ -135,17 +136,20 @@ class SimulationInfo(object):
         for index_label, label in enumerate(np.unique(label_given)):
             label_given_index[label_given == label] = index_label
         prop_cycle = plt.rcParams['axes.prop_cycle']
+        prop_cycle = prop_cycle*(1+len(np.unique(label_given))//len(prop_cycle))
         colors = prop_cycle.by_key()['color']
         markers = [".", "v", "*", "+", "x", "2", "p", "^", "s"]
+        #TODO: find a smart way to display the data with different type of markers
+        markers = markers*(1+len(np.unique(label_given))//len(markers))
         for p in range(len(np.unique(labels_inferred))+2):
-            for q in range(p+1,len(np.unique(labels_inferred))+2):
-                fig, ax = plt.subplots(figsize=(15,10))
+            for q in range(p+1, len(np.unique(labels_inferred))+2):
+                fig, ax = plt.subplots(figsize=(15, 10))
                 for population_index, population_name in enumerate(np.unique(label_given)):
                     position_population = np.where(population_name == label_given)
                     index_colors = labels_inferred[position_population]
                     color_value = [colors[index_color] for index_color in index_colors]
                     markers_value = markers[population_index]
-                    ax.scatter(arr.T[p,position_population].ravel(), arr.T[q, position_population].ravel(), c = color_value, marker = markers_value, s=100)
+                    ax.scatter(arr.T[p,position_population].ravel(), arr.T[q, position_population].ravel(), c=color_value, marker=markers_value, s=100)
                 plt.legend(np.unique(label_given))
                 leg = ax.get_legend()
                 for point in leg.legendHandles:
@@ -155,10 +159,11 @@ class SimulationInfo(object):
                     os.mkdir(dir_plot)
                 markers_shape = [mlines.Line2D([], [], color='black', marker=marker_shape, linestyle='None') for marker_shape in markers]
                 markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
-                legend1 = plt.legend(markers_shape,np.unique(label_given) , loc=1,title="True population")
-                legend2 = plt.legend(markers_color,np.unique(labels_inferred), loc=2,title="Inferred population")
+                legend1 = plt.legend(markers_shape, np.unique(label_given) , loc=7,title="True population")
+                legend2 = plt.legend(markers_color, np.unique(labels_inferred), loc=9,title="Inferred population")
                 ax.add_artist(legend1)
                 ax.add_artist(legend2)
                 ax.set_xlabel(f'PC. {p+1}')
                 ax.set_ylabel(f'PC. {q+1}')
                 fig.savefig(os.path.join(dir_plot, f'mds_axis{p+1}_{q+1}.pdf'))
+                plt.close()
