@@ -127,7 +127,7 @@ class SimulationInfo(object):
             plt.savefig(f"time_pop_{label_pop[pop1_index]}.pdf")
 
 
-    def plot_mds(self, arr, labels_inferred):
+    def plot_mds(self, coordinate, labels_inferred, title: str):
         """Plot the MDS plot
         """
         # TODO: autogenerate nice summary plot depending on 'npop'
@@ -141,7 +141,7 @@ class SimulationInfo(object):
         markers = [".", "v", "*", "+", "x", "2", "p", "^", "s"]
         #TODO: find a smart way to display the data with different type of markers
         markers = markers*(1+len(np.unique(label_given))//len(markers))
-        for p in range(0,self.K ,2):
+        for p in range(0, self.K, 2):
             q = p + 1
             fig, ax = plt.subplots(figsize=(15, 10))
             for population_index, population_name in enumerate(np.unique(label_given)):
@@ -149,7 +149,7 @@ class SimulationInfo(object):
                 index_colors = labels_inferred[position_population]
                 color_value = [colors[index_color] for index_color in index_colors]
                 markers_value = markers[population_index]
-                ax.scatter(arr.T[p,position_population].ravel(), arr.T[q, position_population].ravel(), c=color_value, marker=markers_value, s=100)
+                ax.scatter(coordinate.T[p, position_population].ravel(), coordinate.T[q, position_population].ravel(), c=color_value, marker=markers_value, s=100)
             plt.legend(np.unique(label_given))
             leg = ax.get_legend()
             for point in leg.legendHandles:
@@ -165,5 +165,5 @@ class SimulationInfo(object):
             ax.add_artist(legend2)
             ax.set_xlabel(f'PC. {p+1}')
             ax.set_ylabel(f'PC. {q+1}')
-            fig.savefig(os.path.join(dir_plot, f'mds_axis{p+1}_{q+1}.pdf'))
+            fig.savefig(os.path.join(dir_plot, f'{title}{p+1}_{q+1}.pdf'))
             plt.close()

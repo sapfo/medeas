@@ -16,39 +16,41 @@ from random import uniform
 
 OFFSET = 2
 
-def perform_clustering(npop: int,
-                       simulation
-                       ) -> Tuple['np.ndarray[int]', 'np.ndarray[float]',
-                                  'np.ndarray[float]']:
-    """Perform agglomerative clustering for 'npop' clusters.
 
-    'vectors_file' and 'labels_file' are names of files to read data.
-    Return found labels, distances from large eigenvalues,
-    eigenvalues read from file, and labels read from file.
-    """
-
-    with open(simulation.vec_pattern.format(2), 'rb') as f:
+def get_coordinate(simulation, p):
+    with open(simulation.vec_pattern.format(p), 'rb') as f:
         lambdas, vecs = pickle.load(f)
     N = len(lambdas)
 
     coordinates = np.hstack((lambdas.reshape((N, 1)), vecs.T)).copy()
     coordinates = sorted(coordinates, key=lambda x: x[0], reverse=True)
+
     for i, v in enumerate(coordinates.copy()):
-        print(v[0])
         coordinates[i] = np.sqrt(v[0])*v[1:]
 
-
+    npop = simulation.K
     coordinates = coordinates[:npop + OFFSET]
     coordinates = np.array(coordinates)
     coordinates = coordinates.T
+    return(coordinates)
+
+def perform_clustering(npop: int,
+                       coordinates,
+                       simulation
+                       ) -> Tuple['np.ndarray[int]', 'np.ndarray[float]',
+                                  'np.ndarray[float]']:
+    """Perform agglomerative clustering for simulation
+    Return found labels, distances from large eigenvalues,
+    eigenvalues read from file, and labels read from file.
+    """
 
     if simulation.output_level >= 1:
         print('clustering will be performed on a ' + str(coordinates.shape) + ' matrix')
 
     clusterer = AC(n_clusters=npop, compute_full_tree=True)
     lab_infered = clusterer.fit_predict(coordinates)
-    simulation.plot_mds(coordinates, lab_infered)
-    return lab_infered, coordinates, lambdas
+
+    return lab_infered
 
 
 def find_tree(npop: int, asd_file: str,
@@ -204,6 +206,7 @@ def find_distances(npop: int, T: float,
         maxs[k] = max(s_maxs)
 
     inits = T*inits/2 - 1
+    print(inits)
     mins = T*mins/2 - 1
     maxs = T*maxs/2 - 1
     for i, (mn, mx) in enumerate(zip(mins, maxs)):

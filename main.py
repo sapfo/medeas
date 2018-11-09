@@ -16,7 +16,7 @@ from src.make_asd import compute_asd_matrix
 from src.mds import calc_mds
 from src.lambda_analyze import find_T_and_L, find_K
 from single_pass import run_once
-from src.clustering import perform_clustering, find_tree
+from src.clustering import perform_clustering, find_tree, get_coordinate
 simulation = SimulationInfo()
 
 if not simulation.skip_calculate_matrix:
@@ -42,12 +42,18 @@ if simulation.K:
 else:
     simulation.K = K
 
-inferred_labels, coordinates, lambdas = perform_clustering(K, simulation)
-tree, ns, blocks = find_tree(K, simulation.asd_pattern.format(1), inferred_labels, coordinates, simulation)
+coordinates_mds = get_coordinate(simulation, 1)
+inferred_labels = perform_clustering(simulation.K, coordinates_mds, simulation)
 
+
+simulation.plot_mds(coordinates_mds,inferred_labels,"MDS_")
+coordinates_pca = get_coordinate(simulation, 2)
+simulation.plot_mds(coordinates_pca,inferred_labels,"PCA_")
+simulation.plot_tree()
+
+tree, ns, blocks = find_tree(K, simulation.asd_pattern.format(1), inferred_labels, coordinates_mds, simulation)
 simulation.tree = tree
 simulation.ns = ns
-simulation.lambdas = lambdas
 simulation.blocks = blocks
 
 
