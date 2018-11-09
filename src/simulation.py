@@ -24,7 +24,6 @@ class SimulationInfo(object):
                             type=int, default=1)
         parser.add_argument("--outgroup", help="Who is the outgroup in your data", nargs='+')
 
-        parser.add_argument("-af", "--ancestry_file", help="File containing the ancestry of each locus")
         parser.add_argument("-bws", "--boot_window_size",
                             help="How many markers do we have in each bootstraping windows",
                             type=int, default=100)
@@ -44,7 +43,6 @@ class SimulationInfo(object):
                             type=int, default=1)
 
         args = parser.parse_args()
-        self.ancestry_pattern = args.ancestry_file
 
         self.snps_pattern = args.snps_file
         self.output_folder = args.output_folder
@@ -84,7 +82,6 @@ class SimulationInfo(object):
     def plot_distance_matrix(self, delta):
         with open(self.labels_file) as f:
             lines = f.readlines()
-
         labels_individual = np.array([l.split()[0] for l in lines])
         sorted_labels_individual = np.sort(labels_individual)
         label_pop = np.unique(labels_individual)
