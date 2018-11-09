@@ -115,7 +115,7 @@ def  compute_asd_matrix(pp: int, simulation, txt_format: bool = False) -> None:
 
     # this should be large to avoid overhead of spawning new processes
     # or we need to reuse them somehow
-    MAXSIZE = 200 * 2 ** 20  # 200 MB
+    MAXSIZE = 5000 * 2 ** 20  # 200 MB
 
 
     # ---------- global data
@@ -185,6 +185,7 @@ def  compute_asd_matrix(pp: int, simulation, txt_format: bool = False) -> None:
     for i in range(N):
         for j in range(i + 1, N):
             delta[i, j] = delta[j, i] = tot_dists[i, j] / tot_norms[i, j]
+
     delta = delta ** (1 / pp)
     with open(out_name, 'wb') as f:
         pickle.dump(delta, f)
