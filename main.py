@@ -49,13 +49,13 @@ inferred_labels = perform_clustering(simulation.K, coordinates_mds, simulation)
 simulation.plot_mds(coordinates_mds,inferred_labels,"MDS_")
 coordinates_pca = get_coordinate(simulation, 2)
 simulation.plot_mds(coordinates_pca,inferred_labels,"PCA_")
-simulation.plot_tree()
 
 tree, ns, blocks = find_tree(K, simulation.asd_pattern.format(1), inferred_labels, coordinates_mds, simulation)
 simulation.tree = tree
 simulation.ns = ns
 simulation.blocks = blocks
 
+simulation.plot_tree()
 
 
 simulation.all_res = []

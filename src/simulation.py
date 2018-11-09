@@ -49,7 +49,6 @@ class SimulationInfo(object):
         self.labels_file = args.labels_file
         self.chromosomes = range(1, args.n_chromosome + 1)
         self.bootsize = args.boot_window_size
-        self.output_file = os.path.join(self.output_folder, 'processed', 'chr.{}.stped')
         self.K = args.K
         self.outgroups = args.outgroup
         self.skip_calculate_matrix = args.skip_calculate_matrix
