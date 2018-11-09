@@ -5,17 +5,15 @@ Created on Thu Sep 20 15:29:37 2018
 @author: Frederic
 """
 
-from src.clustering import perform_clustering, find_tree, find_distances, validate_dists
+from src.clustering import find_distances, validate_dists
 
 def run_once(boot: int, K: int, T: float, simulation) -> None:
     suffix = f'.boot.{boot}' if boot > -1 else ''
-    inferred_labels, coordinates, lambdas = perform_clustering(K, simulation)
 
-    tree, ns, blocks = find_tree(K, simulation.asd_pattern.format(1) + suffix, inferred_labels, coordinates, simulation)
 
     res = []
     for _ in range(min(10 + 2 ** K, 100)):
-        dists, constraints = find_distances(K, T, tree, ns, lambdas, blocks, simulation)
+        dists, constraints = find_distances(K, T, simulation.tree, simulation.ns, simulation.lambdas, simulation.blocks, simulation)
         if simulation.output_level >= 1:
             print('Found distances:', dists.x)
         if validate_dists(dists.x, constraints):
@@ -25,4 +23,5 @@ def run_once(boot: int, K: int, T: float, simulation) -> None:
         else:
             if simulation.output_level >= 1:
                 print('Invalid')
+    simulation.generate_ouput_single_bootstrap(boot)
     return(res)
