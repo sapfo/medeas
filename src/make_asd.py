@@ -115,7 +115,7 @@ def  compute_asd_matrix(pp: int, simulation, txt_format: bool = False) -> None:
 
     # this should be large to avoid overhead of spawning new processes
     # or we need to reuse them somehow
-    MAXSIZE = 5000 * 2 ** 20  # 200 MB
+    MAXSIZE = 5000 * 2 ** 20  # 5 Gb
 
 
     # ---------- global data
