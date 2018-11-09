@@ -101,6 +101,7 @@ def find_tree(npop: int, asd_file: str,
     tree = nj(dm)
     new_tree = tree.root_at_midpoint()
     print(new_tree.ascii_art())
+    print(new_tree)
     return new_tree, ns, blocks
 
 
@@ -209,8 +210,8 @@ def find_distances(npop: int, T: float,
     print(inits)
     mins = T*mins/2 - 1
     maxs = T*maxs/2 - 1
-    for i, (mn, mx) in enumerate(zip(mins, maxs)):
-        inits[i] = uniform(mn, mx)
+    for i, (minimum, maximum) in enumerate(zip(mins, maxs)):
+        inits[i] = uniform(minimum, maximum)
 
     if simulation.output_level == 2:
        print('Inits:', inits)
@@ -227,7 +228,6 @@ def find_distances(npop: int, T: float,
         vals, vecs = np.linalg.eigh(b)
         real_vals = 2*(1 - vals)/T**2
         real_vals = np.array(sorted(real_vals, reverse=True))[:npop-1]
-        #Even if we expect the eigenvalue to be real, the "numerical" tiny little complex part cause problem for some simulations
         return np.real(real_vals - ls)
 
     res = least_squares(dev, inits, bounds=(mins, maxs), gtol=1e-15)
