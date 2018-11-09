@@ -35,10 +35,12 @@ if not simulation.skip_calculate_matrix:
 
 T, L = find_T_and_L(simulation, simulation.vec_pattern.format(2))
 K = find_K(simulation.vec_pattern.format(2), L, T, simulation)
-K_over = simulation.K
-if K_over:
-    print(f'OVERRIDING  K = {K} WITH: K = {K_over}')
-    K = K_over
+
+if simulation.K:
+    print(f'OVERRIDING  K = {K} WITH: K = {simulation.K}')
+    K = simulation.K
+else:
+    simulation.K = K
 
 simulation.all_res = []
 
