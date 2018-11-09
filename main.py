@@ -65,5 +65,5 @@ for boot in range(-1, simulation.bootstrap_number):
     for res in boot_res:
         simulation.all_res.append(res)
 
-simulation.generate_output()
+simulation.generate_final_output()
 

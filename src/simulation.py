@@ -3,8 +3,9 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
-
-
+import subprocess
+import datetime
+import sys
 
 class SimulationInfo(object):
 
@@ -45,7 +46,7 @@ class SimulationInfo(object):
         args = parser.parse_args()
 
         self.snps_pattern = args.snps_file
-        self.output_folder = args.output_folder
+
         self.labels_file = args.labels_file
         self.chromosomes = range(1, args.n_chromosome + 1)
         self.bootsize = args.boot_window_size
@@ -55,6 +56,15 @@ class SimulationInfo(object):
         self.simulation = args.simulation
         self.bootstrap_number = args.bootstrap_number
         self.output_level = args.output_level
+
+        self.output_folder = args.output_folder
+        if not os.path.exists(self.output_folder):
+            os.makedirs(self.output_folder)
+        self.logfile = os.path.join(self.output_folder, "simulation.log")
+        self.generate_initial_output(args)
+
+
+
 
         asd_folder = "asd_matrices"
         mds_folder = "MDS_eigensystem"
@@ -67,6 +77,8 @@ class SimulationInfo(object):
                 os.makedirs(path)
         self.asd_pattern = os.path.join(asd_full_path, 'p{}.asd.data')
         self.vec_pattern = os.path.join(mds_full_path, 'p{}.vecs.data')
+
+
         with open(self.labels_file) as f:
             lines = f.readlines()
 
@@ -74,9 +86,9 @@ class SimulationInfo(object):
 
 
 
-    def generate_output(self):
-        with open(os.path.join(self.output_folder, "all_extrapolated_distances.txt"), 'w') as f:
-            np.savetxt(f, self.all_res)
+
+
+
 
     def plot_distance_matrix(self, delta):
         with open(self.labels_file) as f:
@@ -163,3 +175,36 @@ class SimulationInfo(object):
             ax.set_ylabel(f'PC. {q+1}')
             fig.savefig(os.path.join(dir_plot, f'{title}{p+1}_{q+1}.pdf'))
             plt.close()
+
+    def plot_tree(self):
+        tree_filename = os.path.join(self.output_folder, "tree.txt")
+        with open(tree_filename, "w") as f:
+            f.write(self.tree.ascii_art())
+            f.write("\n")
+            f.write(str(self.tree))
+
+    def generate_initial_output(self,args):
+        with open(self.logfile, "w") as f:
+            self.starting_time = datetime.datetime.now().replace(microsecond=0)
+            f.write(f'starting new simulation at time: {self.starting_time} \n')
+            try:
+                label = subprocess.check_output(["git", "describe","--always"]).strip()
+                f.write(f'you are using commit: {label}\n')
+            except:
+                f.write(f'No git hash tag detected \n')
+            f.write("the following line was used to launch the simulation: \n")
+            f.write(" ".join(sys.argv)+"\n")
+            f.write("This led to the following argument being actually used: \n")
+            f.write("\n \n" + "".join(100 * ["*"]) + "\n")
+            for arg in vars(args):
+                f.write(f'{arg}: {getattr(args, arg)} \n')
+            f.write("\n" + "".join(100 * ["*"]) + "\n \n")
+
+    def generate_final_output(self):
+        with open(os.path.join(self.output_folder, "all_extrapolated_distances.txt"), 'w') as f:
+            np.savetxt(f, self.all_res,fmt = "%10.6f")
+        with open(self.logfile, "a") as f:
+            self.end_time = datetime.datetime.now().replace(microsecond=0)
+            f.write(f'Simulation ended successfully at: {self.end_time} \n')
+            f.write(f'job duration:  {self.end_time - self.starting_time} \n')
+            f.write(f'Let\'s hope that the results make sense! \n')
