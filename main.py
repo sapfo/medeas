@@ -16,7 +16,8 @@ from src.make_asd import compute_asd_matrix
 from src.mds import calc_mds
 from src.lambda_analyze import find_T_and_L, find_K
 from single_pass import run_once
-from src.clustering import perform_clustering, find_tree, get_coordinate
+from src.clustering import perform_clustering, find_tree, get_mds_coordinate, set_tree_from_input
+
 simulation = SimulationInfo()
 
 if not simulation.skip_calculate_matrix:
@@ -32,25 +33,31 @@ if not simulation.skip_calculate_matrix:
         calc_mds(simulation.asd_pattern.format(2) + suffix, simulation.vec_pattern.format(2) + suffix)
 
 
+if simulation.topology == None:
+    T, L = find_T_and_L(simulation, simulation.vec_pattern.format(2))
+    K = find_K(simulation.vec_pattern.format(2), L, T, simulation)
 
-T, L = find_T_and_L(simulation, simulation.vec_pattern.format(2))
-K = find_K(simulation.vec_pattern.format(2), L, T, simulation)
+    if simulation.K:
+        print(f'OVERRIDING  K = {K} WITH: K = {simulation.K}')
+        K = simulation.K
+    else:
+        simulation.K = K
 
-if simulation.K:
-    print(f'OVERRIDING  K = {K} WITH: K = {simulation.K}')
-    K = simulation.K
+coordinates_mds = get_mds_coordinate(simulation, 1)
+inferred_labels = None
+if simulation.topology == None:
+    inferred_labels = perform_clustering(simulation.K, coordinates_mds, simulation)
+
+print(inferred_labels)
+#simulation.plot_mds(coordinates_mds,inferred_labels,"MDS_")
+coordinates_pca = get_mds_coordinate(simulation, 2)
+#simulation.plot_mds(coordinates_pca,inferred_labels,"PCA_")
+
+if simulation.topology == None:
+    tree, ns, blocks = find_tree(K, simulation.asd_pattern.format(1), inferred_labels, coordinates_mds, simulation)
 else:
-    simulation.K = K
+    tree, ns, blocks = set_tree_from_input(simulation.asd_pattern.format(1), simulation)
 
-coordinates_mds = get_coordinate(simulation, 1)
-inferred_labels = perform_clustering(simulation.K, coordinates_mds, simulation)
-
-
-simulation.plot_mds(coordinates_mds,inferred_labels,"MDS_")
-coordinates_pca = get_coordinate(simulation, 2)
-simulation.plot_mds(coordinates_pca,inferred_labels,"PCA_")
-
-tree, ns, blocks = find_tree(K, simulation.asd_pattern.format(1), inferred_labels, coordinates_mds, simulation)
 simulation.tree = tree
 simulation.ns = ns
 simulation.blocks = blocks

@@ -33,6 +33,11 @@ class SimulationInfo(object):
                             type=int, default=10
                             )
 
+        parser.add_argument("-t","--topology",
+                            help="What is the topology of the population (newick format, following label order",
+                            type=str, default=None
+                            )
+
 
         parser.add_argument("--simulation", help="Does the data come from a simulation",
                             action="store_true")
@@ -56,6 +61,8 @@ class SimulationInfo(object):
         self.simulation = args.simulation
         self.bootstrap_number = args.bootstrap_number
         self.output_level = args.output_level
+
+        self.topology = args.topology
 
         self.output_folder = args.output_folder
         if not os.path.exists(self.output_folder):
@@ -83,10 +90,6 @@ class SimulationInfo(object):
             lines = f.readlines()
 
         self.labels = [l.split()[0] for l in lines]  # + ['WCD'] * 7
-
-
-
-
 
 
 
@@ -139,6 +142,7 @@ class SimulationInfo(object):
         """Plot the MDS plot
         """
         # TODO: autogenerate nice summary plot depending on 'npop'
+        # TODO: add function to plot if no labels_inferred are given
         label_given = np.array(self.labels)
         label_given_index = np.copy(label_given)
         for index_label, label in enumerate(np.unique(label_given)):

@@ -17,7 +17,7 @@ from random import uniform
 OFFSET = 2
 
 
-def get_coordinate(simulation, p):
+def get_mds_coordinate(simulation, p):
     with open(simulation.vec_pattern.format(p), 'rb') as f:
         lambdas, vecs = pickle.load(f)
     N = len(lambdas)
@@ -51,7 +51,13 @@ def perform_clustering(npop: int,
     lab_infered = clusterer.fit_predict(coordinates)
 
     return lab_infered
+def build_block(npop, labels, delta):
+    blocks = np.zeros((npop, npop), dtype='object')
 
+    for i in range(npop):
+        for j in range(npop):
+            blocks[i, j] = delta[np.where(labels == i)[0]].T[np.where(labels == j)[0]]
+    return(blocks)
 
 def find_tree(npop: int, asd_file: str,
               inferred_labels: 'np.ndarray[int]',
@@ -75,14 +81,8 @@ def find_tree(npop: int, asd_file: str,
         coords[i, :] = np.mean(arr[np.where(inferred_labels == i)[0], :], axis=0)
         ns[i] = len(np.where(inferred_labels == i)[0])
 
-    blocks = np.zeros((npop, npop), dtype='object')
+    blocks = build_block(npop, inferred_labels, delta)
 
-    for i in range(npop):
-        for j in range(npop):
-            blocks[i, j] = delta[np.where(inferred_labels == i)[0]].T[np.where(inferred_labels == j)[0]]
-    if simulation.output_level >= 1:
-        print(coords)
-        print(coords.shape)
 
     for i in range(npop):
         for j in range(npop):
@@ -104,6 +104,25 @@ def find_tree(npop: int, asd_file: str,
     print(new_tree)
     return new_tree, ns, blocks
 
+def set_tree_from_input(asd_file, simulation) -> Tuple[TreeNode, 'np.ndarray[int]', 'np.ndarray[float]']:
+    """Using the given tree topology, Return the neighbor join tree, population sizes,
+    and the bloks of original distance matrix that correspond to given
+    population pairs (for further determination of fitting window).
+    """
+    with open(asd_file, 'rb') as f:
+        delta = pickle.load(f)
+    npop = simulation.K
+    ns = np.zeros((npop,))
+    inferred_labels = np.unique(simulation.labels, return_inverse=True)[1]
+    for i in set(inferred_labels):
+        ns[i] = len(np.where(inferred_labels == i)[0])
+
+    blocks = build_block(npop, inferred_labels, delta)
+    print(simulation.topology)
+
+    tree = read(StringIO(simulation.topology),format='newick', into=TreeNode)
+    print(tree.ascii_art())
+    return tree, ns, blocks
 
 def find_distances(npop: int, T: float,
                    new_tree: TreeNode, ns: 'np.ndarray[int]',
@@ -193,6 +212,7 @@ def find_distances(npop: int, T: float,
     for k in range(npop - 1):
         # From every block of distances find boundaries for fitting,
         # i.e. smallest and largest value.
+
         ks = np.where(d_ind == k)
         subblocks = blocks[ks]
         means = []
