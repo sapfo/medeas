@@ -43,6 +43,8 @@ if simulation.topology == None:
         K = simulation.K
     else:
         simulation.K = K
+else:
+    simulation.K = len(np.unique(simulation.labels))
 
 coordinates_mds = get_mds_coordinate(simulation, 1)
 inferred_labels = None
@@ -50,12 +52,14 @@ inferred_labels = None
 if simulation.topology == None:
     inferred_labels = perform_clustering(simulation.K, coordinates_mds, simulation)
     simulation.used_labels = inferred_labels
+
 else:
     numerical_labels = np.unique(simulation.labels, return_inverse=True)[1]
     simulation.used_labels = numerical_labels
 
 ns = build_population_dimension(simulation.K,simulation.used_labels)
 simulation.ns = ns
+
 
 
 
