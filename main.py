@@ -49,9 +49,9 @@ if simulation.topology == None:
     inferred_labels = perform_clustering(simulation.K, coordinates_mds, simulation)
 
 print(inferred_labels)
-#simulation.plot_mds(coordinates_mds,inferred_labels,"MDS_")
+simulation.plot_mds(coordinates_mds,inferred_labels,"MDS_")
 coordinates_pca = get_mds_coordinate(simulation, 2)
-#simulation.plot_mds(coordinates_pca,inferred_labels,"PCA_")
+simulation.plot_mds(coordinates_pca,inferred_labels,"PCA_")
 
 if simulation.topology == None:
     tree, ns, blocks = find_tree(K, simulation.asd_pattern.format(1), inferred_labels, coordinates_mds, simulation)

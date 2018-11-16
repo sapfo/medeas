@@ -158,9 +158,13 @@ class SimulationInfo(object):
             fig, ax = plt.subplots(figsize=(15, 10))
             for population_index, population_name in enumerate(np.unique(label_given)):
                 position_population = np.where(population_name == label_given)
-                index_colors = labels_inferred[position_population]
-                color_value = [colors[index_color] for index_color in index_colors]
-                markers_value = markers[population_index]
+                if labels_inferred is not None:
+                    index_colors = labels_inferred[position_population]
+                    color_value = [colors[index_color] for index_color in index_colors]
+                    markers_value = markers[population_index]
+                else:
+                    color_value = colors[population_index]
+                    markers_value = markers[0]
                 ax.scatter(coordinate.T[p, position_population].ravel(), coordinate.T[q, position_population].ravel(), c=color_value, marker=markers_value, s=100)
             plt.legend(np.unique(label_given))
             leg = ax.get_legend()
@@ -169,12 +173,17 @@ class SimulationInfo(object):
             dir_plot = os.path.join(self.output_folder, "mds_plot")
             if not os.path.isdir(dir_plot):
                 os.mkdir(dir_plot)
-            markers_shape = [mlines.Line2D([], [], color='black', marker=marker_shape, linestyle='None') for marker_shape in markers]
-            markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
-            legend1 = plt.legend(markers_shape, np.unique(label_given) , loc=7,title="True population")
-            legend2 = plt.legend(markers_color, np.unique(labels_inferred), loc=9,title="Inferred population")
-            ax.add_artist(legend1)
-            ax.add_artist(legend2)
+            if labels_inferred is not None:
+                markers_shape = [mlines.Line2D([], [], color='black', marker=marker_shape, linestyle='None') for marker_shape in markers]
+                markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
+                legend1 = plt.legend(markers_shape, np.unique(label_given) , loc=7,title="True population")
+                ax.add_artist(legend1)
+                legend2 = plt.legend(markers_color, np.unique(labels_inferred), loc=9, title="Inferred population")
+                ax.add_artist(legend2)
+            else:
+                markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
+                legend1 = plt.legend(markers_color, np.unique(label_given) , loc=7,title="Population")
+                ax.add_artist(legend1)
             ax.set_xlabel(f'PC. {p+1}')
             ax.set_ylabel(f'PC. {q+1}')
             fig.savefig(os.path.join(dir_plot, f'{title}{p+1}_{q+1}.pdf'))
