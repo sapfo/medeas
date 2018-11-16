@@ -10,6 +10,7 @@ Created on Mon Jul 10 12:20:25 2017
 
 import matplotlib
 matplotlib.use('Agg')
+import numpy as np
 
 from src.simulation import SimulationInfo
 from src.make_asd import compute_asd_matrix
@@ -48,15 +49,20 @@ inferred_labels = None
 
 if simulation.topology == None:
     inferred_labels = perform_clustering(simulation.K, coordinates_mds, simulation)
-    ns = build_population_dimension(simulation.K, inferred_labels)
+    simulation.used_labels = inferred_labels
 else:
-    ns = build_population_dimension(simulation.K, simulation.labels)
-simulation.ns = ns
-simulation.inferred_labels = inferred_labels
+    numerical_labels = np.unique(simulation.labels, return_inverse=True)[1]
+    simulation.used_labels = numerical_labels
 
-simulation.plot_mds(coordinates_mds, "MDS_")
+ns = build_population_dimension(simulation.K,simulation.used_labels)
+simulation.ns = ns
+
+
+
+
+simulation.plot_mds(coordinates_mds, inferred_labels, "MDS_")
 coordinates_pca = get_mds_coordinate(simulation, 2)
-simulation.plot_mds(coordinates_pca, "PCA_")
+simulation.plot_mds(coordinates_pca, inferred_labels, "PCA_")
 
 if simulation.topology == None:
     tree = find_tree(K, simulation.asd_pattern.format(1), inferred_labels, coordinates_mds, simulation)

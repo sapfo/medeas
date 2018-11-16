@@ -59,10 +59,10 @@ def build_distance_subblock(npop, labels, delta):
             blocks[i, j] = delta[np.where(labels == i)[0]].T[np.where(labels == j)[0]]
     return(blocks)
 
-def build_population_dimension(npop: int, inferred_labels):
+def build_population_dimension(npop: int, numerical_labels):
     ns = np.zeros((npop,))
-    for i in set(inferred_labels):
-        ns[i] = len(np.where(inferred_labels == i)[0])
+    for i in set(numerical_labels):
+        ns[i] = len(np.where(numerical_labels == i)[0])
     return(ns)
 
 def find_tree(npop: int, asd_file: str,
@@ -108,17 +108,6 @@ def set_tree_from_input(asd_file, simulation) -> Tuple[TreeNode, 'np.ndarray[int
     and the bloks of original distance matrix that correspond to given
     population pairs (for further determination of fitting window).
     """
-    with open(asd_file, 'rb') as f:
-        delta = pickle.load(f)
-    npop = simulation.K
-    ns = np.zeros((npop,))
-    inferred_labels = np.unique(simulation.labels, return_inverse=True)[1]
-    for i in set(inferred_labels):
-        ns[i] = len(np.where(inferred_labels == i)[0])
-
-    blocks = build_distance_subblock(npop, inferred_labels, delta)
-    print(simulation.topology)
-
     tree = read(StringIO(simulation.topology),format='newick', into=TreeNode)
     print(tree.ascii_art())
     return tree

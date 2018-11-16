@@ -15,7 +15,7 @@ def run_once(boot: int, simulation) -> None:
     with open(simulation.asd_pattern.format(1) + suffix, 'rb') as f:
         delta = pickle.load(f)
     T, L = find_T_and_L(simulation, simulation.vec_pattern.format(2) + suffix)
-    distance_subblocks = build_distance_subblock(simulation.K, simulation.inferred_labels, delta)
+    distance_subblocks = build_distance_subblock(simulation.K, simulation.used_labels, delta)
     res = []
     for _ in range(min(10 + 2 ** simulation.K, 100)):
         dists, constraints = find_distances(simulation.K, T, simulation.tree, simulation.ns, lambdas, distance_subblocks, simulation)

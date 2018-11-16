@@ -140,7 +140,6 @@ class SimulationInfo(object):
         """Plot the MDS plot
         """
         # TODO: autogenerate nice summary plot depending on 'npop'
-        # TODO: add function to plot if no labels_inferred are given
         label_given = np.array(self.labels)
         label_given_index = np.copy(label_given)
         for index_label, label in enumerate(np.unique(label_given)):
