@@ -23,7 +23,6 @@ class SimulationInfo(object):
                             type=int, default=0)
         parser.add_argument("--n_chromosome", help="Number of chromosome If they are stored in different file",
                             type=int, default=1)
-        parser.add_argument("--outgroup", help="Who is the outgroup in your data", nargs='+')
 
         parser.add_argument("-bws", "--boot_window_size",
                             help="How many markers do we have in each bootstraping windows",
@@ -56,7 +55,6 @@ class SimulationInfo(object):
         self.chromosomes = range(1, args.n_chromosome + 1)
         self.bootsize = args.boot_window_size
         self.K = args.K
-        self.outgroups = args.outgroup
         self.skip_calculate_matrix = args.skip_calculate_matrix
         self.simulation = args.simulation
         self.bootstrap_number = args.bootstrap_number
