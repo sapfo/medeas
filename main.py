@@ -61,7 +61,7 @@ simulation.plot_tree()
 simulation.all_res = []
 
 for boot in range(-1, simulation.bootstrap_number):
-    boot_res = run_once(boot, K, T, simulation)
+    boot_res = run_once(boot, simulation.K, simulation)
     for res in boot_res:
         simulation.all_res.append(res)
 

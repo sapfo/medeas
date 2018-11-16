@@ -8,7 +8,7 @@ import pickle
 from src.clustering import find_distances, validate_dists
 from src.lambda_analyze import find_T_and_L
 
-def run_once(boot: int, K: int, T: float, simulation) -> None:
+def run_once(boot: int, K: int, simulation) -> None:
     suffix = f'.boot.{boot}' if boot > -1 else ''
     with open(simulation.vec_pattern.format(1), 'rb') as f:
         lambdas, vec = pickle.load(f)
