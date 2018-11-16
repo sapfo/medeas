@@ -51,13 +51,19 @@ def perform_clustering(npop: int,
     lab_infered = clusterer.fit_predict(coordinates)
 
     return lab_infered
-def build_block(npop, labels, delta):
+def build_distance_subblock(npop, labels, delta):
     blocks = np.zeros((npop, npop), dtype='object')
 
     for i in range(npop):
         for j in range(npop):
             blocks[i, j] = delta[np.where(labels == i)[0]].T[np.where(labels == j)[0]]
     return(blocks)
+
+def build_population_dimension(npop: int, inferred_labels):
+    ns = np.zeros((npop,))
+    for i in set(inferred_labels):
+        ns[i] = len(np.where(inferred_labels == i)[0])
+    return(ns)
 
 def find_tree(npop: int, asd_file: str,
               inferred_labels: 'np.ndarray[int]',
@@ -72,37 +78,30 @@ def find_tree(npop: int, asd_file: str,
 
     with open(asd_file, 'rb') as f:
         delta = pickle.load(f)
-
-    ds = np.zeros((npop, npop))
-    coords = np.zeros((npop, npop+OFFSET))
-    ns = np.zeros((npop,))
-
-    for i in set(inferred_labels):
-        coords[i, :] = np.mean(arr[np.where(inferred_labels == i)[0], :], axis=0)
-        ns[i] = len(np.where(inferred_labels == i)[0])
-
-    blocks = build_block(npop, inferred_labels, delta)
+    ns = build_population_dimension(npop, inferred_labels)
+    blocks = build_distance_subblock(npop, inferred_labels, delta)
 
 
-    for i in range(npop):
-        for j in range(npop):
-            ds[i, j] = np.sqrt(np.sum((coords[i] - coords[j])**2))
-    if simulation.output_level >= 1:
-        print(ds)
-    if simulation.output_level:
-        plt.pcolor(ds)
-        plt.show()
 
-    ids = list(map(str, range(npop)))
-    dm = DistanceMatrix(ds, ids)
     if npop == 2:
         tree = read(StringIO('(0:0.1, 1:0.1);'), format='newick', into=TreeNode)
         return tree, ns, blocks
+
+    ds = np.zeros((npop, npop))
+    coords = np.zeros((npop, npop+OFFSET))
+    for i in set(inferred_labels):
+        coords[i, :] = np.mean(arr[np.where(inferred_labels == i)[0], :], axis=0)
+    for i in range(npop):
+        for j in range(npop):
+            ds[i, j] = np.sqrt(np.sum((coords[i] - coords[j])**2))
+
+    ids = list(map(str, range(npop)))
+    dm = DistanceMatrix(ds, ids)
     tree = nj(dm)
     new_tree = tree.root_at_midpoint()
     print(new_tree.ascii_art())
     print(new_tree)
-    return new_tree, ns, blocks
+    return new_tree
 
 def set_tree_from_input(asd_file, simulation) -> Tuple[TreeNode, 'np.ndarray[int]', 'np.ndarray[float]']:
     """Using the given tree topology, Return the neighbor join tree, population sizes,
@@ -117,18 +116,18 @@ def set_tree_from_input(asd_file, simulation) -> Tuple[TreeNode, 'np.ndarray[int
     for i in set(inferred_labels):
         ns[i] = len(np.where(inferred_labels == i)[0])
 
-    blocks = build_block(npop, inferred_labels, delta)
+    blocks = build_distance_subblock(npop, inferred_labels, delta)
     print(simulation.topology)
 
     tree = read(StringIO(simulation.topology),format='newick', into=TreeNode)
     print(tree.ascii_art())
-    return tree, ns, blocks
+    return tree
 
 def find_distances(npop: int, T: float,
                    new_tree: TreeNode, ns: 'np.ndarray[int]',
                    lambdas: 'np.ndarray[float]',
                    blocks: 'np.ndarray[np.ndarray[float]]',
-                   simulation
+                   output_level
                    ) -> Tuple[OptimizeResult, List[Tuple[int, int]]]:
     """Find split times from the tree topology."""
     d_ind = -np.ones((npop, npop), dtype='int16')
@@ -162,7 +161,7 @@ def find_distances(npop: int, T: float,
 
     add_indices(new_tree)
 
-    if simulation.output_level == 2:
+    if output_level == 2:
         print(d_ind)
         print(constraints)
 
@@ -177,7 +176,7 @@ def find_distances(npop: int, T: float,
                     D[i, j] = Dv[d_ind[i, j]]
         return D
 
-    if simulation.output_level == 2:
+    if output_level == 2:
         print('------------')
         print(ns)
         Dv = range(npop, 0, -1)
@@ -197,7 +196,7 @@ def find_distances(npop: int, T: float,
                 b[i, j] = ns[i] * ((D[i, j] + 1)**2 - delta[i] - delta[j] + delta_0)
         return b
 
-    if simulation.output_level == 2:
+    if output_level == 2:
         b = make_b(D)
         print('------------')
         print(b)
@@ -212,7 +211,6 @@ def find_distances(npop: int, T: float,
     for k in range(npop - 1):
         # From every block of distances find boundaries for fitting,
         # i.e. smallest and largest value.
-
         ks = np.where(d_ind == k)
         subblocks = blocks[ks]
         means = []
@@ -233,7 +231,7 @@ def find_distances(npop: int, T: float,
     for i, (minimum, maximum) in enumerate(zip(mins, maxs)):
         inits[i] = uniform(minimum, maximum)
 
-    if simulation.output_level == 2:
+    if output_level == 2:
        print('Inits:', inits)
        print('Mins:', mins)
        print('Maxs:', maxs)
