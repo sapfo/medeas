@@ -38,8 +38,8 @@ def compute(i: int, data: 'np.ndarray[int]',
     """Compute all distances and norms for 'i'th row in 'data'."""
     dists: List[float] = []
     norms: List[int] = []
-    if TESTING:
-        print(f'Processing row #{i}')
+    #if TESTING:
+        #print(f'Processing row #{i}')
     for j in range(i + 1, N):
         dist, norm = dist_and_norm(data[i], data[j], dist_func)
         dists.append(dist)

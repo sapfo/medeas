@@ -15,7 +15,7 @@ import datetime
 
 folder = sys.argv[1] # folder should exist. its currently created by job_sim.sh
 
-SIMULATION_CASE = 1
+SIMULATION_CASE = 3
 # 1 = 1 population
 # 2 = 2 population
 # 2 = 3 pop
@@ -28,6 +28,7 @@ file_fake_labs = os.path.join(folder, 'fake_labs.txt')
 scrm_exec = sys.argv[2]
 
 def run_scrm(scrm_command: str):
+    print(scrm_command)
     with open(os.path.join(folder, 'scrm_command.txt'), 'w') as f:
         f.write(scrm_command)
     scrm = Popen(scrm_command.split(' '), stdout=PIPE)
@@ -104,7 +105,7 @@ def run_simulation_three_pops(n1: int, n2: int, n3: int, L: int, theta: float, D
         f.write(str(L))
     scrm_command = f'scrm {n1+n2+n3} {L} -t {theta} -I 3 {n1} {n2} {n3} -ej {D} 2 1 -ej {D1} 3 2'
     run_scrm(scrm_command)
-    transcode_scrm(n1+n2)
+    transcode_scrm(n1+n2 + n3)
 
 
 
