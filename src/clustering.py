@@ -85,7 +85,7 @@ def find_tree(npop: int, asd_file: str,
 
     if npop == 2:
         tree = read(StringIO('(0:0.1, 1:0.1);'), format='newick', into=TreeNode)
-        return tree, ns, blocks
+        return tree
 
     ds = np.zeros((npop, npop))
     coords = np.zeros((npop, npop+OFFSET))
