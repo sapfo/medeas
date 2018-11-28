@@ -16,16 +16,25 @@ def run_once(boot: int, simulation) -> None:
         delta = pickle.load(f)
     T, L = find_T_and_L(simulation, simulation.vec_pattern.format(2) + suffix)
     distance_subblocks = build_distance_subblock(simulation.K, simulation.used_labels, delta)
-    res = []
-    for _ in range(min(10 + 2 ** simulation.K, 100)):
-        dists, constraints = find_distances(simulation.K, T, simulation.tree, simulation.ns, lambdas, distance_subblocks, simulation)
+    distance_validity = False
+    nbLoop = 0
+    maxNbLoop = min(10 + 2 ** simulation.K, 100)
+    while not distance_validity:
+        if nbLoop == maxNbLoop: break
+        nbLoop = nbLoop + 1
+        dists, constraints = find_distances(simulation.K, T, simulation.tree, simulation.ns, lambdas,
+                                            distance_subblocks, simulation)
+        distance_validity = validate_dists(dists.x, constraints)
         if simulation.output_level >= 1:
             print('Found distances:', dists.x)
-        if validate_dists(dists.x, constraints):
-            if simulation.output_level >= 1:
-                print('OK')
-            res.append(dists.x)
-        else:
-            if simulation.output_level >= 1:
-                print('Invalid')
-    return(res)
+        if simulation.output_level >=1:
+            if distance_validity:
+                print('Valide distance')
+            else:
+                print('Invalid distance')
+
+    else:
+        return(dists.x)
+
+    print('Unable to find valid distances for this bootstrap sample')
+    return(None)

@@ -214,7 +214,8 @@ def find_distances(npop: int, T: float,
         maxs[k] = max(s_maxs)
 
     inits = T*inits/2 - 1
-    print(inits)
+    if output_level ==2:
+        print("Initial value for distance: " + str(inits))
     mins = T*mins/2 - 1
     maxs = T*maxs/2 - 1
     for i, (minimum, maximum) in enumerate(zip(mins, maxs)):

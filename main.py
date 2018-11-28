@@ -77,11 +77,12 @@ simulation.tree = tree
 simulation.plot_tree()
 
 
-simulation.all_res = []
+simulation.all_distance = []
 for boot in range(-1, simulation.bootstrap_number):
-    boot_res = run_once(boot, simulation)
-    for res in boot_res:
-        simulation.all_res.append(res)
+    boot_distance = run_once(boot, simulation)
+    if boot_distance is not None:
+        simulation.all_distance.append(boot_distance)
+
 
 simulation.generate_final_output()
 
