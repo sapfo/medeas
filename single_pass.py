@@ -23,7 +23,7 @@ def run_once(boot: int, simulation) -> None:
         if nbLoop == maxNbLoop: break
         nbLoop = nbLoop + 1
         dists, constraints = find_distances(simulation.K, T, simulation.tree, simulation.ns, lambdas,
-                                            distance_subblocks, simulation)
+                                            distance_subblocks, simulation.output_level)
         distance_validity = validate_dists(dists.x, constraints)
         if simulation.output_level >= 1:
             print('Found distances:', dists.x)
