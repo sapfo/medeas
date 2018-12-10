@@ -212,7 +212,9 @@ class SimulationInfo(object):
 
     def generate_final_output(self):
         with open(os.path.join(self.output_folder, "all_extrapolated_distances.txt"), 'w') as f:
-            np.savetxt(f, self.all_distance,fmt = "%10.6f")
+            np.savetxt(f, self.all_distance, fmt = "%10.6f")
+        with open(os.path.join(self.output_folder, "extrapolated_population.txt"), 'w') as f:
+            np.savetxt(f,self.used_labels, fmt = "%10.0f")
         with open(self.logfile, "a") as f:
             self.end_time = datetime.datetime.now().replace(microsecond=0)
             f.write(f'Simulation ended successfully at: {self.end_time} \n')
