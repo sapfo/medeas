@@ -27,7 +27,6 @@ def run_once(boot: int, simulation) -> None:
         distance_validity = validate_dists(dists.x, constraints)
         if simulation.output_level >= 1:
             print('Found distances:', dists.x)
-        if simulation.output_level >=1:
             if distance_validity:
                 print('Valide distance')
             else:
