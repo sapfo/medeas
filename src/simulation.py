@@ -249,8 +249,12 @@ class SimulationInfo(object):
         print("generating final output")
         print(self.output_folder)
         print(self.all_distance)
+
         with open(os.path.join(self.output_folder, "all_extrapolated_distances.txt"), 'w') as f:
-            np.savetxt(f, self.all_distance)
+            if len(self.all_distance) > 0:
+                np.savetxt(f, self.all_distance, fmt = "%10.6f")
+            else:
+                f.write("No valide distance where found")
         with open(os.path.join(self.output_folder, "MDS_coordinate.txt"), 'w') as f:
             np.savetxt(f,  get_mds_coordinate(self, 1), fmt = "%10.6f")
         with open(os.path.join(self.output_folder, "PCA_coordinate.txt"), 'w') as f:
