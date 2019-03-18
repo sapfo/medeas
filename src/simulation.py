@@ -99,7 +99,7 @@ class SimulationInfo(object):
         plt.tick_params(bottom=False, top=True, labeltop=True, labelbottom=False)
         plt.xticks(start_position, np.sort(label_pop), rotation='vertical')
         plt.yticks(start_position, np.sort(label_pop))
-        plt.savefig("plot_distance.pdf")
+        plt.savefig(os.path.join(self.output_folder,"plot_distance.pdf"))
         plt.figure()
 
         for population_label in label_pop:
@@ -109,7 +109,7 @@ class SimulationInfo(object):
             all_pop_value = all_pop_value[all_pop_value > 0.00000001]
             plt.hist(all_pop_value, 15, label=population_label, density=1, alpha=0.75)
         plt.legend()
-        plt.savefig("Time_per_pop.pdf")
+        plt.savefig(os.path.join(self.output_folder,"Time_per_pop.pdf"))
 
         nb_population = len(label_pop)
         for pop1_index in range(nb_population):
@@ -123,7 +123,7 @@ class SimulationInfo(object):
                 plt.hist(all_pop_value, 20, label=label_pop[pop1_index] + "-" + label_pop[pop2_index], density=1,
                          alpha=0.5)
             plt.legend(ncol=2)
-            plt.savefig(f"time_pop_{label_pop[pop1_index]}.pdf")
+            plt.savefig(os.path.join(self.output_folder,f"time_pop_{label_pop[pop1_index]}.pdf"))
 
 
     def plot_mds(self, arr, labels_inferred):
