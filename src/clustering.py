@@ -26,7 +26,10 @@ def get_mds_coordinate(simulation, p):
     coordinates = sorted(coordinates, key=lambda x: x[0], reverse=True)
 
     for i, v in enumerate(coordinates.copy()):
-        coordinates[i] = np.sqrt(v[0])*v[1:]
+        if v[0] > 0:
+            coordinates[i] = np.sqrt(v[0])*v[1:]
+        else:
+            coordinates[i] = 0 * v[1:]
 
     npop = simulation.K
     coordinates = coordinates[:npop + OFFSET]
@@ -47,7 +50,7 @@ def perform_clustering(npop: int,
     if simulation.output_level >= 1:
         print('clustering will be performed on a ' + str(coordinates.shape) + ' matrix')
 
-    clusterer = AC(n_clusters=npop, compute_full_tree=True)
+    clusterer = AC(n_clusters=npop, compute_full_tree=True,linkage="ward")
     lab_infered = clusterer.fit_predict(coordinates)
 
     return lab_infered
@@ -108,6 +111,7 @@ def set_tree_from_input(asd_file, simulation) -> Tuple[TreeNode, 'np.ndarray[int
     and the bloks of original distance matrix that correspond to given
     population pairs (for further determination of fitting window).
     """
+    print(simulation.topology)
     tree = read(StringIO(simulation.topology),format='newick', into=TreeNode)
     print(tree.ascii_art())
     return tree
@@ -214,7 +218,7 @@ def find_distances(npop: int, T: float,
         maxs[k] = max(s_maxs)
 
     inits = T*inits/2 - 1
-    if output_level ==2:
+    if output_level <= 2:
         print("Initial value for distance: " + str(inits))
     mins = T*mins/2 - 1
     maxs = T*maxs/2 - 1
