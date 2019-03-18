@@ -16,40 +16,54 @@ from random import uniform
 
 OFFSET = 2
 
-def perform_clustering(npop: int,
-                       simulation
-                       ) -> Tuple['np.ndarray[int]', 'np.ndarray[float]',
-                                  'np.ndarray[float]']:
-    """Perform agglomerative clustering for 'npop' clusters.
 
-    'vectors_file' and 'labels_file' are names of files to read data.
-    Return found labels, distances from large eigenvalues,
-    eigenvalues read from file, and labels read from file.
-    """
-
-    with open(simulation.vec_pattern.format(2), 'rb') as f:
+def get_mds_coordinate(simulation, p):
+    with open(simulation.vec_pattern.format(p), 'rb') as f:
         lambdas, vecs = pickle.load(f)
     N = len(lambdas)
 
     coordinates = np.hstack((lambdas.reshape((N, 1)), vecs.T)).copy()
     coordinates = sorted(coordinates, key=lambda x: x[0], reverse=True)
+
     for i, v in enumerate(coordinates.copy()):
-        print(v[0])
         coordinates[i] = np.sqrt(v[0])*v[1:]
 
-
+    npop = simulation.K
     coordinates = coordinates[:npop + OFFSET]
     coordinates = np.array(coordinates)
     coordinates = coordinates.T
+    return(coordinates)
+
+def perform_clustering(npop: int,
+                       coordinates,
+                       simulation
+                       ) -> Tuple['np.ndarray[int]', 'np.ndarray[float]',
+                                  'np.ndarray[float]']:
+    """Perform agglomerative clustering for simulation
+    Return found labels, distances from large eigenvalues,
+    eigenvalues read from file, and labels read from file.
+    """
 
     if simulation.output_level >= 1:
         print('clustering will be performed on a ' + str(coordinates.shape) + ' matrix')
 
     clusterer = AC(n_clusters=npop, compute_full_tree=True)
     lab_infered = clusterer.fit_predict(coordinates)
-    simulation.plot_mds(coordinates, lab_infered)
-    return lab_infered, coordinates, lambdas
 
+    return lab_infered
+def build_distance_subblock(npop, labels, delta):
+    blocks = np.zeros((npop, npop), dtype='object')
+
+    for i in range(npop):
+        for j in range(npop):
+            blocks[i, j] = delta[np.where(labels == i)[0]].T[np.where(labels == j)[0]]
+    return(blocks)
+
+def build_population_dimension(npop: int, numerical_labels):
+    ns = np.zeros((npop,))
+    for i in set(numerical_labels):
+        ns[i] = len(np.where(numerical_labels == i)[0])
+    return(ns)
 
 def find_tree(npop: int, asd_file: str,
               inferred_labels: 'np.ndarray[int]',
@@ -64,49 +78,45 @@ def find_tree(npop: int, asd_file: str,
 
     with open(asd_file, 'rb') as f:
         delta = pickle.load(f)
+    ns = build_population_dimension(npop, inferred_labels)
+    blocks = build_distance_subblock(npop, inferred_labels, delta)
+
+
+
+    if npop == 2:
+        tree = read(StringIO('(0:0.1, 1:0.1);'), format='newick', into=TreeNode)
+        return tree
 
     ds = np.zeros((npop, npop))
     coords = np.zeros((npop, npop+OFFSET))
-    ns = np.zeros((npop,))
-
     for i in set(inferred_labels):
         coords[i, :] = np.mean(arr[np.where(inferred_labels == i)[0], :], axis=0)
-        ns[i] = len(np.where(inferred_labels == i)[0])
-
-    blocks = np.zeros((npop, npop), dtype='object')
-
-    for i in range(npop):
-        for j in range(npop):
-            blocks[i, j] = delta[np.where(inferred_labels == i)[0]].T[np.where(inferred_labels == j)[0]]
-    if simulation.output_level >= 1:
-        print(coords)
-        print(coords.shape)
-
     for i in range(npop):
         for j in range(npop):
             ds[i, j] = np.sqrt(np.sum((coords[i] - coords[j])**2))
-    if simulation.output_level >= 1:
-        print(ds)
-    if simulation.output_level:
-        plt.pcolor(ds)
-        plt.show()
 
     ids = list(map(str, range(npop)))
     dm = DistanceMatrix(ds, ids)
-    if npop == 2:
-        tree = read(StringIO('(0:0.1, 1:0.1);'), format='newick', into=TreeNode)
-        return tree, ns, blocks
     tree = nj(dm)
     new_tree = tree.root_at_midpoint()
     print(new_tree.ascii_art())
-    return new_tree, ns, blocks
+    print(new_tree)
+    return new_tree
 
+def set_tree_from_input(asd_file, simulation) -> Tuple[TreeNode, 'np.ndarray[int]', 'np.ndarray[float]']:
+    """Using the given tree topology, Return the neighbor join tree, population sizes,
+    and the bloks of original distance matrix that correspond to given
+    population pairs (for further determination of fitting window).
+    """
+    tree = read(StringIO(simulation.topology),format='newick', into=TreeNode)
+    print(tree.ascii_art())
+    return tree
 
 def find_distances(npop: int, T: float,
                    new_tree: TreeNode, ns: 'np.ndarray[int]',
                    lambdas: 'np.ndarray[float]',
                    blocks: 'np.ndarray[np.ndarray[float]]',
-                   simulation
+                   output_level
                    ) -> Tuple[OptimizeResult, List[Tuple[int, int]]]:
     """Find split times from the tree topology."""
     d_ind = -np.ones((npop, npop), dtype='int16')
@@ -140,7 +150,7 @@ def find_distances(npop: int, T: float,
 
     add_indices(new_tree)
 
-    if simulation.output_level == 2:
+    if output_level == 2:
         print(d_ind)
         print(constraints)
 
@@ -155,7 +165,7 @@ def find_distances(npop: int, T: float,
                     D[i, j] = Dv[d_ind[i, j]]
         return D
 
-    if simulation.output_level == 2:
+    if output_level == 2:
         print('------------')
         print(ns)
         Dv = range(npop, 0, -1)
@@ -175,7 +185,7 @@ def find_distances(npop: int, T: float,
                 b[i, j] = ns[i] * ((D[i, j] + 1)**2 - delta[i] - delta[j] + delta_0)
         return b
 
-    if simulation.output_level == 2:
+    if output_level == 2:
         b = make_b(D)
         print('------------')
         print(b)
@@ -204,12 +214,14 @@ def find_distances(npop: int, T: float,
         maxs[k] = max(s_maxs)
 
     inits = T*inits/2 - 1
+    if output_level ==2:
+        print("Initial value for distance: " + str(inits))
     mins = T*mins/2 - 1
     maxs = T*maxs/2 - 1
-    for i, (mn, mx) in enumerate(zip(mins, maxs)):
-        inits[i] = uniform(mn, mx)
+    for i, (minimum, maximum) in enumerate(zip(mins, maxs)):
+        inits[i] = uniform(minimum, maximum)
 
-    if simulation.output_level == 2:
+    if output_level == 2:
        print('Inits:', inits)
        print('Mins:', mins)
        print('Maxs:', maxs)
@@ -224,7 +236,6 @@ def find_distances(npop: int, T: float,
         vals, vecs = np.linalg.eigh(b)
         real_vals = 2*(1 - vals)/T**2
         real_vals = np.array(sorted(real_vals, reverse=True))[:npop-1]
-        #Even if we expect the eigenvalue to be real, the "numerical" tiny little complex part cause problem for some simulations
         return np.real(real_vals - ls)
 
     res = least_squares(dev, inits, bounds=(mins, maxs), gtol=1e-15)

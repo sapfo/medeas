@@ -63,14 +63,10 @@ def find_T_and_L(simulation, file: str) -> Tuple[float, float]:
 
     # popt[1] = 2000
     if simulation.output_level > 0:
-        plt.close()
-        plt.plot(lambdas_s, range(len(lambdas_s)))
         lambdas_se = np.linspace(lambdas.min(), lambdas.max(), 5000)
         l_dens_fit = [dens_fit(l, *popt) for l in lambdas_se]
-        import matplotlib.pylab as pyl
-        pyl.xlim([0.0,0.2])
-        plt.plot(lambdas_se, l_dens_fit)
-        plt.savefig('fit.pdf')
+        simulation.plot_eigenvalues(lambdas_se, l_dens_fit)
+
     p_err = np.sqrt(np.diag(pcov))
     print('FIT: ', popt, p_err)
     print(f'Extrapolated value for the total tree length T: {popt[0]}')
@@ -115,12 +111,5 @@ def find_K(file: str, L: float, T: float, simulation) -> int:
         i += 1
         lambdas = lambdas[1:]
 
-    if simulation.output_level >= 1:
-        lambdas = list(sorted(lambdas0, reverse=True))
-        lambdas = np.array(lambdas)
-        plt.figure()
-        plt.plot(lambdas, 'b.')
-        plt.figure()
-        plt.hist(lambdas, 50)
     print('Number of clusters found:', i - 1)
     return i - 1

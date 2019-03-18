@@ -115,7 +115,7 @@ def  compute_asd_matrix(pp: int, simulation, txt_format: bool = False) -> None:
 
     # this should be large to avoid overhead of spawning new processes
     # or we need to reuse them somehow
-    MAXSIZE = 200 * 2 ** 20  # 200 MB
+    MAXSIZE = 5000 * 2 ** 20  # 5 Gb
 
 
     # ---------- global data
@@ -123,11 +123,11 @@ def  compute_asd_matrix(pp: int, simulation, txt_format: bool = False) -> None:
     if txt_format:
         with open(name) as f:
             N = len(f.readline()) // 2
-            print(f'N = {N}')
+            print(f'nb individual = {N}')
     else:
         with open(name.format(1), 'rb') as f:
             N = pickle.load(f).shape[1]
-            print(f'N = {N}')
+            print(f'nb individual = {N}')
 
     tot_dists = np.zeros((N, N))
     tot_norms = np.zeros((N, N))
@@ -185,6 +185,7 @@ def  compute_asd_matrix(pp: int, simulation, txt_format: bool = False) -> None:
     for i in range(N):
         for j in range(i + 1, N):
             delta[i, j] = delta[j, i] = tot_dists[i, j] / tot_norms[i, j]
+
     delta = delta ** (1 / pp)
     with open(out_name, 'wb') as f:
         pickle.dump(delta, f)
