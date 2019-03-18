@@ -139,10 +139,11 @@ class SimulationInfo(object):
         plt.tick_params(bottom=False, top=True, labeltop=True, labelbottom=False)
         plt.xticks(start_position, np.sort(label_pop), rotation='vertical')
         plt.yticks(start_position, np.sort(label_pop))
+
+
         filePath = os.path.join(self.output_folder, "plot_distance.pdf")
         plt.savefig(filePath)
         plt.close()
-        plt.figure()
 
         for population_label in label_pop:
             population_position = sorted_labels_individual == population_label
@@ -151,8 +152,8 @@ class SimulationInfo(object):
             all_pop_value = all_pop_value[all_pop_value > 0.00000001]
             plt.hist(all_pop_value, 15, label=population_label, density=1, alpha=0.75)
         plt.legend()
-        filePath = os.path.join(self.output_folder, "Time_per_pop.pdf")
 
+        filePath = os.path.join(self.output_folder, "Time_per_pop.pdf")
         plt.savefig(filePath)
         plt.close()
         nb_population = len(label_pop)
