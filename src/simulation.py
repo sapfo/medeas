@@ -7,6 +7,7 @@ import subprocess
 import datetime
 import sys
 from skbio.tree import nj, TreeNode
+import pickle
 from src.clustering import get_mds_coordinate
 
 class SimulationInfo(object):
@@ -31,7 +32,7 @@ class SimulationInfo(object):
                             type=int, default=100)
         parser.add_argument("-bsn","--bootstrap_number",
                             help="How many bootstrap do we perform",
-                            type=int, default=10
+                            type=int, default=100
                             )
 
         parser.add_argument("-t","--topology",
@@ -91,7 +92,34 @@ class SimulationInfo(object):
 
         self.labels = [l.split()[0] for l in lines]  # + ['WCD'] * 7
 
+    def plot_eigenvalues(self, lambdas_se, l_dens_fit):
 
+        with open(self.vec_pattern.format(1), 'rb') as f:
+            lambdas, vecs = pickle.load(f)
+        lambdas = -np.sort(-lambdas)
+        plt.figure()
+        plt.plot(lambdas,"o")
+        plt.xlabel("Eigenvalues index")
+        plt.ylabel("Eigenvalues")
+        filePath = os.path.join(self.output_folder, "eigenvalues.pdf")
+        plt.savefig(filePath)
+        plt.close()
+
+        plt.figure()
+        plt.hist(lambdas)
+        filePath = os.path.join(self.output_folder, "histogram_eigenvalues.pdf")
+        plt.savefig(filePath)
+        plt.close()
+
+        plt.figure()
+        lambdas_s = np.array(sorted(lambdas))
+        lambdas_s = lambdas_s[1:]
+        plt.plot(lambdas_s, range(len(lambdas_s)))
+        lambdas_se = np.linspace(lambdas.min(), lambdas.max(), 5000)
+        plt.plot(lambdas_se, l_dens_fit)
+        filePath = os.path.join(self.output_folder, "fit_marchenko_pastur.pdf")
+        plt.savefig(filePath)
+        plt.close()
 
     def plot_distance_matrix(self, delta):
         with open(self.labels_file) as f:
@@ -111,7 +139,9 @@ class SimulationInfo(object):
         plt.tick_params(bottom=False, top=True, labeltop=True, labelbottom=False)
         plt.xticks(start_position, np.sort(label_pop), rotation='vertical')
         plt.yticks(start_position, np.sort(label_pop))
-        plt.savefig("plot_distance.pdf")
+        filePath = os.path.join(self.output_folder, "plot_distance.pdf")
+        plt.savefig(filePath)
+        plt.close()
         plt.figure()
 
         for population_label in label_pop:
@@ -121,8 +151,10 @@ class SimulationInfo(object):
             all_pop_value = all_pop_value[all_pop_value > 0.00000001]
             plt.hist(all_pop_value, 15, label=population_label, density=1, alpha=0.75)
         plt.legend()
-        plt.savefig("Time_per_pop.pdf")
+        filePath = os.path.join(self.output_folder, "Time_per_pop.pdf")
 
+        plt.savefig(filePath)
+        plt.close()
         nb_population = len(label_pop)
         for pop1_index in range(nb_population):
             plt.figure()
@@ -135,7 +167,8 @@ class SimulationInfo(object):
                 plt.hist(all_pop_value, 20, label=label_pop[pop1_index] + "-" + label_pop[pop2_index], density=1,
                          alpha=0.5)
             plt.legend(ncol=2)
-            plt.savefig(f"time_pop_{label_pop[pop1_index]}.pdf")
+            plt.savefig(os.path.join(self.output_folder,f"time_pop_{label_pop[pop1_index]}.pdf"))
+            plt.close()
 
 
     def plot_mds(self, coordinate, labels_inferred, title: str):
@@ -154,7 +187,7 @@ class SimulationInfo(object):
         markers = markers*(1+len(np.unique(label_given))//len(markers))
         for p in range(0, self.K, 2):
             q = p + 1
-            fig, ax = plt.subplots(figsize=(15, 10))
+            fig, ax = plt.subplots(figsize=(20, 20))
             for population_index, population_name in enumerate(np.unique(label_given)):
                 position_population = np.where(population_name == label_given)
                 if labels_inferred is not None:
@@ -175,14 +208,14 @@ class SimulationInfo(object):
             if labels_inferred is not None:
                 markers_shape = [mlines.Line2D([], [], color='black', marker=marker_shape, linestyle='None') for marker_shape in markers]
                 markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
-                legend1 = plt.legend(markers_shape, np.unique(label_given) , loc=7,title="True population")
-                ax.add_artist(legend1)
-                legend2 = plt.legend(markers_color, np.unique(labels_inferred), loc=9, title="Inferred population")
-                ax.add_artist(legend2)
+               # legend1 = plt.legend(markers_shape, np.unique(label_given) , loc=7,title="True population")
+               # ax.add_artist(legend1)
+                #legend2 = plt.legend(markers_color, np.unique(labels_inferred), loc=8, title="Inferred population")
+                #ax.add_artist(legend2)
             else:
                 markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
                 legend1 = plt.legend(markers_color, np.unique(label_given) , loc=7,title="Population")
-                ax.add_artist(legend1)
+               # ax.add_artist(legend1)
             ax.set_xlabel(f'PC. {p+1}')
             ax.set_ylabel(f'PC. {q+1}')
             fig.savefig(os.path.join(dir_plot, f'{title}{p+1}_{q+1}.pdf'))
@@ -213,8 +246,11 @@ class SimulationInfo(object):
             f.write("\n" + "".join(100 * ["*"]) + "\n \n")
 
     def generate_final_output(self):
+        print("generating final output")
+        print(self.output_folder)
+        print(self.all_distance)
         with open(os.path.join(self.output_folder, "all_extrapolated_distances.txt"), 'w') as f:
-            np.savetxt(f, self.all_distance, fmt = "%10.6f")
+            np.savetxt(f, self.all_distance)
         with open(os.path.join(self.output_folder, "MDS_coordinate.txt"), 'w') as f:
             np.savetxt(f,  get_mds_coordinate(self, 1), fmt = "%10.6f")
         with open(os.path.join(self.output_folder, "PCA_coordinate.txt"), 'w') as f:
