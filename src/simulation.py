@@ -209,10 +209,10 @@ class SimulationInfo(object):
             if labels_inferred is not None:
                 markers_shape = [mlines.Line2D([], [], color='black', marker=marker_shape, linestyle='None') for marker_shape in markers]
                 markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
-               # legend1 = plt.legend(markers_shape, np.unique(label_given) , loc=7,title="True population")
-               # ax.add_artist(legend1)
-                #legend2 = plt.legend(markers_color, np.unique(labels_inferred), loc=8, title="Inferred population")
-                #ax.add_artist(legend2)
+                legend1 = plt.legend(markers_shape, np.unique(label_given) , loc=7,title="True population")
+                ax.add_artist(legend1)
+                legend2 = plt.legend(markers_color, np.unique(labels_inferred), loc=8, title="Inferred population")
+                ax.add_artist(legend2)
             else:
                 markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
                 legend1 = plt.legend(markers_color, np.unique(label_given) , loc=7,title="Population")
