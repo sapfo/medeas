@@ -193,10 +193,10 @@ class SimulationInfo(object):
                 position_population = np.where(population_name == label_given)
                 if labels_inferred is not None:
                     index_colors = labels_inferred[position_population]
-                    color_value = [colors[index_color] for index_color in index_colors]
-                    markers_value = markers[population_index]
+                    color_value = [colors[index_color%9] for index_color in index_colors]
+                    markers_value = markers[population_index%9]
                 else:
-                    color_value = colors[population_index]
+                    color_value = colors[population_index%9]
                     markers_value = markers[0]
                 ax.scatter(coordinate.T[p, position_population].ravel(), coordinate.T[q, position_population].ravel(), c=color_value, marker=markers_value, s=100)
             plt.legend(np.unique(label_given))
