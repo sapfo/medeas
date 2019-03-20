@@ -94,7 +94,7 @@ class SimulationInfo(object):
 
     def plot_eigenvalues(self, lambdas_se, l_dens_fit):
 
-        with open(self.vec_pattern.format(1), 'rb') as f:
+        with open(self.vec_pattern.format(2), 'rb') as f:
             lambdas, vecs = pickle.load(f)
         lambdas = -np.sort(-lambdas)
         plt.figure()
@@ -117,6 +117,7 @@ class SimulationInfo(object):
         plt.plot(lambdas_s, range(len(lambdas_s)))
         lambdas_se = np.linspace(lambdas.min(), lambdas.max(), 5000)
         plt.plot(lambdas_se, l_dens_fit)
+        plt.xlim(0,0.1)
         filePath = os.path.join(self.output_folder, "fit_marchenko_pastur.pdf")
         plt.savefig(filePath)
         plt.close()
