@@ -186,7 +186,7 @@ def find_distances(npop: int, T: float,
         delta_0 = sum(ns[i]*delta[i] for i in range(npop))/n
         for i in range(npop):
             for j in range(npop):
-                b[i, j] = ns[i] * ((D[i, j] + 1)**2 - delta[i] - delta[j] + delta_0)
+                b[i, j] = np.sqrt(ns[i]*ns[j]) * ((D[i, j] + 1)**2 - delta[i] - delta[j] + delta_0)
         return b
 
     if output_level == 2:
