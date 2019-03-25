@@ -97,23 +97,29 @@ class SimulationInfo(object):
         with open(self.vec_pattern.format(2), 'rb') as f:
             lambdas, vecs = pickle.load(f)
         lambdas = -np.sort(-lambdas)
-        plt.figure()
+        plt.subplot(211)
         plt.plot(lambdas,"o")
-        plt.xlabel("Eigenvalues index")
+
         plt.ylabel("Eigenvalues")
+        plt.subplot(212)
+        plt.plot(lambdas[self.K:-2],"o")
+        plt.ylabel("Eigenvalues")
+        plt.xlabel("Eigenvalues index")
         filePath = os.path.join(self.output_folder, "eigenvalues.pdf")
         plt.savefig(filePath)
         plt.close()
 
         plt.figure()
-        plt.hist(lambdas)
+        plt.hist(-np.sort(-lambdas)[self.K:-2])
+        plt.xlabel("Eigenvalue")
+        plt.ylabel("Eigenvalues count")
         filePath = os.path.join(self.output_folder, "histogram_eigenvalues.pdf")
         plt.savefig(filePath)
         plt.close()
 
         plt.figure()
         lambdas_s = np.array(sorted(lambdas))
-        lambdas_s = lambdas_s[1:]
+        #lambdas_s = lambdas_s[:]
         plt.plot(lambdas_s, range(len(lambdas_s)))
         lambdas_se = np.linspace(lambdas.min(), lambdas.max(), 5000)
         plt.plot(lambdas_se, l_dens_fit)
