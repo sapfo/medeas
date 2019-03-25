@@ -260,15 +260,15 @@ class SimulationInfo(object):
 
         with open(os.path.join(self.output_folder, "all_extrapolated_distances.txt"), 'w') as f:
             if len(self.all_distance) > 0:
-                np.savetxt(f, self.all_distance, fmt = "%10.6f")
+                np.savetxt(f, self.all_distance)
             else:
                 f.write("No valide distance where found")
         with open(os.path.join(self.output_folder, "MDS_coordinate.txt"), 'w') as f:
-            np.savetxt(f,  get_mds_coordinate(self, 1), fmt = "%10.6f")
+            np.savetxt(f,  get_mds_coordinate(self, 1))
         with open(os.path.join(self.output_folder, "PCA_coordinate.txt"), 'w') as f:
-            np.savetxt(f,  get_mds_coordinate(self, 2), fmt = "%10.6f")
+            np.savetxt(f,  get_mds_coordinate(self, 2))
         with open(os.path.join(self.output_folder, "extrapolated_population.txt"), 'w') as f:
-            np.savetxt(f,self.used_labels, fmt = "%10.0f")
+            np.savetxt(f,self.used_labels)
         with open(self.logfile, "a") as f:
             self.end_time = datetime.datetime.now().replace(microsecond=0)
             f.write(f'Simulation ended successfully at: {self.end_time} \n')
