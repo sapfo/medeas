@@ -123,7 +123,7 @@ class SimulationInfo(object):
         plt.plot(lambdas_s, range(len(lambdas_s)))
         lambdas_se = np.linspace(lambdas.min(), lambdas.max(), 5000)
         plt.plot(lambdas_se, l_dens_fit)
-        plt.xlim(0,0.1)
+        plt.xlim(lambdas[self.K:-2].min()/1.2,lambdas[self.K:-2].max()*1.1)
         filePath = os.path.join(self.output_folder, "fit_marchenko_pastur.pdf")
         plt.savefig(filePath)
         plt.close()
