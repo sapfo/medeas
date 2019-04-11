@@ -21,9 +21,6 @@ class SimulationInfo(object):
         parser.add_argument("-lf", "--labels_file", help="File containing the labels",
                             required=True)
         parser.add_argument("-of", "--output_folder", help="Folder where results and temporal data should be store")
-        parser.add_argument("-K",
-                            help="Number of population. If K=0 (default), the soft detect automatically the number of population",
-                            type=int, default=0)
         parser.add_argument("--n_chromosome", help="Number of chromosome If they are stored in different file",
                             type=int, default=1)
 
@@ -57,7 +54,6 @@ class SimulationInfo(object):
         self.labels_file = args.labels_file
         self.chromosomes = range(1, args.n_chromosome + 1)
         self.bootsize = args.boot_window_size
-        self.K = args.K
         self.skip_calculate_matrix = args.skip_calculate_matrix
         self.simulation = args.simulation
         self.bootstrap_number = args.bootstrap_number
@@ -90,7 +86,11 @@ class SimulationInfo(object):
         with open(self.labels_file) as f:
             lines = f.readlines()
 
-        self.labels = [l.split()[0] for l in lines]  # + ['WCD'] * 7
+        labels = [l.split()[0] for l in lines]
+        self.labels = np.array(labels)
+        populations, self.numerical_labels = np.unique(self.labels,return_inverse=True)
+        self.populations = populations
+        self.K = len(populations)
 
     def plot_eigenvalues(self, lambdas_se, l_dens_fit):
 
@@ -266,8 +266,6 @@ class SimulationInfo(object):
             np.savetxt(f,  get_mds_coordinate(self, 1))
         with open(os.path.join(self.output_folder, "PCA_coordinate.txt"), 'w') as f:
             np.savetxt(f,  get_mds_coordinate(self, 2))
-        with open(os.path.join(self.output_folder, "extrapolated_population.txt"), 'w') as f:
-            np.savetxt(f,self.used_labels)
         with open(self.logfile, "a") as f:
             self.end_time = datetime.datetime.now().replace(microsecond=0)
             f.write(f'Simulation ended successfully at: {self.end_time} \n')

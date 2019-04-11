@@ -195,7 +195,6 @@ def find_distances(npop: int, T: float,
         print(b)
         print(np.linalg.det(b))
 
-    T = T**2/2
 
     inits = np.zeros((npop-1,))
     maxs = np.zeros((npop-1,))

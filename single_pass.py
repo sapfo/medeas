@@ -6,7 +6,7 @@ Created on Thu Sep 20 15:29:37 2018
 """
 import pickle
 from src.clustering import find_distances, validate_dists, build_distance_subblock
-from src.lambda_analyze import find_T_and_L
+from src.lambda_analyze import find_T_and_ts
 
 def run_once(boot: int, simulation) -> None:
     suffix = f'.boot.{boot}' if boot > -1 else ''
@@ -14,8 +14,8 @@ def run_once(boot: int, simulation) -> None:
         lambdas, vec = pickle.load(f)
     with open(simulation.asd_pattern.format(1) + suffix, 'rb') as f:
         delta = pickle.load(f)
-    T, L = find_T_and_L(simulation, simulation.vec_pattern.format(2) + suffix)
-    distance_subblocks = build_distance_subblock(simulation.K, simulation.used_labels, delta)
+    T, ts = find_T_and_ts(simulation.asd_pattern.format(1) + suffix,simulation.labels)
+    distance_subblocks = build_distance_subblock(simulation.K, simulation.numerical_labels, delta)
     distance_validity = False
     nbLoop = 0
     maxNbLoop = min(10 + 2 ** simulation.K, 100)
