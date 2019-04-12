@@ -63,7 +63,7 @@ def build_distance_subblock(npop, labels, delta):
     return(blocks)
 
 def build_population_dimension(npop: int, numerical_labels):
-    ns = np.zeros((npop,))
+    ns = np.zeros((npop,),dtype=int)
     for i in set(numerical_labels):
         ns[i] = len(np.where(numerical_labels == i)[0])
     return(ns)
@@ -116,7 +116,7 @@ def set_tree_from_input(asd_file, simulation) -> Tuple[TreeNode, 'np.ndarray[int
     print(tree.ascii_art())
     return tree
 
-def find_distances(npop: int, T: float,
+def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
                    new_tree: TreeNode, ns: 'np.ndarray[int]',
                    lambdas: 'np.ndarray[float]',
                    blocks: 'np.ndarray[np.ndarray[float]]',
@@ -155,46 +155,38 @@ def find_distances(npop: int, T: float,
     add_indices(new_tree)
 
     if output_level == 2:
-        print(d_ind)
-        print(constraints)
+        print(f"d_ind = {d_ind}")
 
-    def make_D(Dv: List[int]) -> 'np.ndarray[int]':
+    def make_tij(ts: List[int]) -> 'np.ndarray[float]':
         """Make distance (split time) matrix from the given vector of
         split times 'Dv'.
         """
-        D = np.zeros((npop, npop))
+        tij = np.ones((npop, npop))
         for i in range(npop):
             for j in range(npop):
                 if i != j:
-                    D[i, j] = Dv[d_ind[i, j]]
-        return D
+                    tij[i, j] = ts[d_ind[i, j]]
+                else:
+                    tij[i, i] = t_within[i]
+        return tij
 
-    if output_level == 2:
-        print('------------')
-        print(ns)
-        Dv = range(npop, 0, -1)
-        D = make_D(Dv)
-        print(D)
 
-    def make_b(D: 'np.ndarray[int]') -> 'np.ndarray[flost]':
+
+    def make_b(ts: 'np.ndarray[int]') -> 'np.ndarray[float]':
         """Make the B-matrix (see paper for details)."""
         n = np.sum(ns)
         b = np.zeros((npop, npop))
         delta = np.zeros((npop,))
         for i in range(npop):
-            delta[i] = (sum(ns[k]*(D[i, k] + 1)**2 for k in range(npop) if k != i) + ns[i] - 1)/n
+            delta[i] = (sum(ns[k]*ts[i, k]**2 for k in range(npop) if k != i) + t_within[i]*(ns[i] - 1))/n
         delta_0 = sum(ns[i]*delta[i] for i in range(npop))/n
         for i in range(npop):
             for j in range(npop):
-                b[i, j] = np.sqrt(ns[i]*ns[j]) * ((D[i, j] + 1)**2 - delta[i] - delta[j] + delta_0)
+                if i != j:
+                    b[i, j] = np.sqrt(ns[i]*ns[j]) * (ts[i, j]**2 - delta[i] - delta[j] + delta_0)
+                else:
+                    b[i, j] = (ns[i]-1) * ts[i, j] ** 2 - ns[i] * (2*delta[i] - delta_0)
         return b
-
-    if output_level == 2:
-        b = make_b(D)
-        print('------------')
-        print(b)
-        print(np.linalg.det(b))
-
 
     inits = np.zeros((npop-1,))
     maxs = np.zeros((npop-1,))
@@ -216,32 +208,46 @@ def find_distances(npop: int, T: float,
         mins[k] = min(s_mins)
         maxs[k] = max(s_maxs)
 
-    inits = T*inits/2 - 1
-    if output_level <= 2:
-        print("Initial value for distance: " + str(inits))
-    mins = T*mins/2 - 1
-    maxs = T*maxs/2 - 1
+    mins = T*mins/2
+    maxs = T*maxs/2
     for i, (minimum, maximum) in enumerate(zip(mins, maxs)):
         inits[i] = uniform(minimum, maximum)
-
     if output_level == 2:
-       print('Inits:', inits)
-       print('Mins:', mins)
-       print('Maxs:', maxs)
+        print(f"{100*'-'}")
+        print(f"ns = {ns}")
+        print('Inits:', inits)
+        print('Mins:', mins)
+        print('Maxs:', maxs)
+        tij = make_tij(inits)
+        print(f"{25*'-'} \n tij = \n {tij}")
+        b = make_b(tij)
+        print(f"{25*'-'} \n b = \n {b}")
+        print(f"det (b) = {np.linalg.det(b)}")
+        print(f"{100*'-'}")
+
+
 
     ls = sorted(lambdas, reverse=True)
     ls = np.array(ls[:npop-1])
 
     def dev(dv: 'np.ndarray[float]') -> 'np.ndarray[float]':
         """Find deviation (residuals) for given split time vector 'dv'."""
-        D = make_D(dv)
+        D = make_tij(dv)
         b = make_b(D)
         vals, vecs = np.linalg.eigh(b)
-        real_vals = 2*(1 - vals)/T**2
+        real_vals = -2*vals/T**2
         real_vals = np.array(sorted(real_vals, reverse=True))[:npop-1]
         return np.real(real_vals - ls)
 
     res = least_squares(dev, inits, bounds=(mins, maxs), gtol=1e-15)
+    if output_level == 2:
+        print('res:', res.x)
+        tij = make_tij(res.x)
+        print(f"{25*'-'} \n tij = \n {tij}")
+        b = make_b(tij)
+        print(f"{25*'-'} \n b = \n {b}")
+        print(f"{100*'-'}")
+
     return res, constraints
 
 

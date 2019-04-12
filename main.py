@@ -15,7 +15,7 @@ import numpy as np
 from src.simulation import SimulationInfo
 from src.make_asd import compute_asd_matrix
 from src.mds import calc_mds
-from src.lambda_analyze import find_T_and_ts
+from src.lambda_analyze import find_T_and_t_within
 from single_pass import run_once
 from src.clustering import perform_clustering, find_tree, get_mds_coordinate, set_tree_from_input, build_population_dimension
 
@@ -35,7 +35,7 @@ for boot in range(simulation.bootstrap_number):
     calc_mds(simulation.asd_pattern.format(1) + suffix, simulation.vec_pattern.format(1) + suffix)
     calc_mds(simulation.asd_pattern.format(2) + suffix, simulation.vec_pattern.format(2) + suffix)
 
-T,ts = find_T_and_ts(simulation.asd_pattern.format(2),simulation.labels)
+T,ts = find_T_and_t_within(simulation.asd_pattern.format(2), simulation.labels)
 
 
 coordinates_mds = get_mds_coordinate(simulation, 1)
