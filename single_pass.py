@@ -33,7 +33,7 @@ def run_once(boot: int, simulation) -> None:
                 print('Invalid distance')
 
     else:
-        return(dists.x)
+        return(dists.x,t_within)
 
     print('Unable to find valid distances for this bootstrap sample')
     return(None)
