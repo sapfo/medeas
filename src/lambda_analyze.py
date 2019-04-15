@@ -30,5 +30,8 @@ def find_T_and_t_within(file: str, label) -> Tuple[float, float]:
     larger_t = np.max(ts_over_T)
     T = 1/larger_t
     ts = ts_over_T/larger_t
+    first_t = ts_over_T[0]
+    T = 1/first_t
+    ts = ts_over_T/first_t
     return((T,ts))
 
