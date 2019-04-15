@@ -39,12 +39,12 @@ T,ts = find_T_and_t_within(simulation.asd_pattern.format(2), simulation.labels)
 
 
 coordinates_mds = get_mds_coordinate(simulation, 1)
-
+simulation.plot_mds(coordinates_mds,"MDS_")
 ns = build_population_dimension(simulation.K,simulation.numerical_labels)
 simulation.ns = ns
 
 coordinates_pca = get_mds_coordinate(simulation, 2)
-
+simulation.plot_mds(coordinates_pca, "PCA_")
 if simulation.topology == None:
     tree = find_tree(simulation.K, simulation.asd_pattern.format(1), simulation.numerical_labels, coordinates_mds, simulation)
 else:

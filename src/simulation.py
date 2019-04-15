@@ -179,10 +179,9 @@ class SimulationInfo(object):
             plt.close()
 
 
-    def plot_mds(self, coordinate, labels_inferred, title: str):
+    def plot_mds(self, coordinate, title: str):
         """Plot the MDS plot
         """
-        # TODO: autogenerate nice summary plot depending on 'npop'
         label_given = np.array(self.labels)
         label_given_index = np.copy(label_given)
         for index_label, label in enumerate(np.unique(label_given)):
@@ -190,22 +189,15 @@ class SimulationInfo(object):
         prop_cycle = plt.rcParams['axes.prop_cycle']
         prop_cycle = prop_cycle*(1+len(np.unique(label_given))//len(prop_cycle))
         colors = prop_cycle.by_key()['color']
-        markers = [".", "v", "*", "+", "x", "2", "p", "^", "s"]
-        #TODO: find a smart way to display the data with different type of markers
-        markers = markers*(1+len(np.unique(label_given))//len(markers))
         for p in range(0, self.K, 2):
             q = p + 1
-            fig, ax = plt.subplots(figsize=(20, 20))
+            plt.rcParams.update({'font.size': 22})
+            fig, ax = plt.subplots(figsize=(15, 15))
             for population_index, population_name in enumerate(np.unique(label_given)):
                 position_population = np.where(population_name == label_given)
-                if labels_inferred is not None:
-                    index_colors = labels_inferred[position_population]
-                    color_value = [colors[index_color%9] for index_color in index_colors]
-                    markers_value = markers[population_index%9]
-                else:
-                    color_value = colors[population_index%9]
-                    markers_value = markers[0]
-                ax.scatter(coordinate.T[p, position_population].ravel(), coordinate.T[q, position_population].ravel(), c=color_value, marker=markers_value, s=100)
+                color_value = colors[population_index%9]
+
+                ax.scatter(coordinate.T[p, position_population].ravel(), coordinate.T[q, position_population].ravel(), c=color_value, s=75, alpha = 0.6)
             plt.legend(np.unique(label_given))
             leg = ax.get_legend()
             for point in leg.legendHandles:
@@ -213,17 +205,8 @@ class SimulationInfo(object):
             dir_plot = os.path.join(self.output_folder, "mds_plot")
             if not os.path.isdir(dir_plot):
                 os.mkdir(dir_plot)
-            if labels_inferred is not None:
-                markers_shape = [mlines.Line2D([], [], color='black', marker=marker_shape, linestyle='None') for marker_shape in markers]
-                markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
-                legend1 = plt.legend(markers_shape, np.unique(label_given) , loc=7,title="True population")
-                ax.add_artist(legend1)
-                legend2 = plt.legend(markers_color, np.unique(labels_inferred), loc=8, title="Inferred population")
-                ax.add_artist(legend2)
-            else:
-                markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
-                legend1 = plt.legend(markers_color, np.unique(label_given) , loc=7,title="Population")
-               # ax.add_artist(legend1)
+            markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
+            plt.legend(markers_color, np.unique(label_given) , title="Population")
             ax.set_xlabel(f'PC. {p+1}')
             ax.set_ylabel(f'PC. {q+1}')
             fig.savefig(os.path.join(dir_plot, f'{title}{p+1}_{q+1}.pdf'))
