@@ -92,7 +92,7 @@ class SimulationInfo(object):
         self.populations = populations
         self.K = len(populations)
 
-    def plot_eigenvalues(self, lambdas_se, l_dens_fit):
+    def plot_eigenvalues(self):
 
         with open(self.vec_pattern.format(2), 'rb') as f:
             lambdas, vecs = pickle.load(f)
@@ -117,16 +117,6 @@ class SimulationInfo(object):
         plt.savefig(filePath)
         plt.close()
 
-        plt.figure()
-        lambdas_s = np.array(sorted(lambdas))
-        #lambdas_s = lambdas_s[:]
-        plt.plot(lambdas_s, range(len(lambdas_s)))
-        lambdas_se = np.linspace(lambdas.min(), lambdas.max(), 5000)
-        plt.plot(lambdas_se, l_dens_fit)
-        plt.xlim(lambdas[self.K:-2].min()/1.2,lambdas[self.K:-2].max()*1.1)
-        filePath = os.path.join(self.output_folder, "fit_marchenko_pastur.pdf")
-        plt.savefig(filePath)
-        plt.close()
 
     def plot_distance_matrix(self, delta):
         with open(self.labels_file) as f:
@@ -144,8 +134,10 @@ class SimulationInfo(object):
         plt.figure()
         plt.imshow(delta)
         plt.tick_params(bottom=False, top=True, labeltop=True, labelbottom=False)
-        plt.xticks(start_position, np.sort(label_pop), rotation='vertical')
-        plt.yticks(start_position, np.sort(label_pop))
+        plt.xticks(start_position, np.sort(label_pop), rotation='horizontal',ha="left")
+
+        plt.yticks(start_position, np.sort(label_pop),rotation="vertical",va="top")
+
 
 
         filePath = os.path.join(self.output_folder, "plot_distance.pdf")

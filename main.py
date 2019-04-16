@@ -13,6 +13,7 @@ matplotlib.use('Agg')
 import numpy as np
 
 from src.simulation import SimulationInfo
+import pickle
 from src.make_asd import compute_asd_matrix
 from src.mds import calc_mds
 from src.lambda_analyze import find_T_and_t_within
@@ -25,10 +26,14 @@ if not simulation.skip_calculate_matrix:
     compute_asd_matrix(1, simulation, txt_format=simulation.simulation)
     compute_asd_matrix(2, simulation, txt_format=simulation.simulation)
 
+with open(simulation.asd_pattern.format(1), 'rb') as f:
+     delta = pickle.load(f)
+simulation.plot_distance_matrix(delta)
+
 calc_mds(simulation.asd_pattern.format(1), simulation.vec_pattern.format(1))
 
 calc_mds(simulation.asd_pattern.format(2), simulation.vec_pattern.format(2))
-
+simulation.plot_eigenvalues()
 
 for boot in range(simulation.bootstrap_number):
     suffix = f'.boot.{boot}'
