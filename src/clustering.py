@@ -178,7 +178,7 @@ def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
         b = np.zeros((npop, npop))
         delta = np.zeros((npop,))
         for i in range(npop):
-            delta[i] = (sum(ns[k]*ts[i, k]**2 for k in range(npop) if k != i) + t_within[i]*(ns[i] - 1))/n
+            delta[i] = (sum(ns[k]*ts[i, k]**2 for k in range(npop) if k != i) + t_within[i]**2*(ns[i] - 1))/n
         delta_0 = sum(ns[i]*delta[i] for i in range(npop))/n
         for i in range(npop):
             for j in range(npop):
