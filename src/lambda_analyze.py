@@ -26,10 +26,7 @@ def find_T_and_t_within(file: str, label) -> Tuple[float, float]:
         upper_sub_matrix = np.triu_indices(nb_individual, k = 1)
         t_over_T = 0.5*np.mean(sub_matrix[upper_sub_matrix])
         ts_over_T[index_population] = t_over_T
-    #Expressing all time in term of effective size of the largest population
-    larger_t = np.max(ts_over_T)
-    T = 1/larger_t
-    ts = ts_over_T/larger_t
+
     first_t = ts_over_T[0]
     T = 1/first_t
     ts = ts_over_T/first_t

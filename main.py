@@ -40,9 +40,6 @@ for boot in range(simulation.bootstrap_number):
     calc_mds(simulation.asd_pattern.format(1) + suffix, simulation.vec_pattern.format(1) + suffix)
     calc_mds(simulation.asd_pattern.format(2) + suffix, simulation.vec_pattern.format(2) + suffix)
 
-T,ts = find_T_and_t_within(simulation.asd_pattern.format(2), simulation.labels)
-
-
 coordinates_mds = get_mds_coordinate(simulation, 1)
 simulation.plot_mds(coordinates_mds,"MDS_")
 ns = build_population_dimension(simulation.K,simulation.numerical_labels)
@@ -61,11 +58,13 @@ simulation.plot_tree()
 
 simulation.all_distance = []
 simulation.all_effective_size = []
+simulation.all_T = []
 for boot in range(-1, simulation.bootstrap_number):
-    (distances, effective_size) = run_once(boot, simulation)
+    (distances, effective_size, T) = run_once(boot, simulation)
     if distances is not None:
         simulation.all_distance.append(distances)
     simulation.all_effective_size.append(effective_size)
+    simulation.all_T.append(T)
 
 
 simulation.generate_final_output()

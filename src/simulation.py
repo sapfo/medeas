@@ -242,6 +242,9 @@ class SimulationInfo(object):
                 for effective_size in effective_sizes:
                     f.write(str(effective_size) + "\t")
                 f.write("\n")
+        with open(os.path.join(self.output_folder, "all_extrapolated_T.txt"), 'w') as f:
+            for T in self.all_T:
+                    f.write(str(T)+"\n")
         with open(os.path.join(self.output_folder, "MDS_coordinate.txt"), 'w') as f:
             np.savetxt(f,  get_mds_coordinate(self, 1))
         with open(os.path.join(self.output_folder, "PCA_coordinate.txt"), 'w') as f:
