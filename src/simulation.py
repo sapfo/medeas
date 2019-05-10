@@ -129,10 +129,11 @@ class SimulationInfo(object):
         end_position = np.cumsum(individual_per_pop)
         start_position = np.insert(end_position, 0, 0, axis=0)
         print(start_position)
-        delta = delta[sorting_index, :]
-        delta = delta[:, sorting_index]
+        delta_reorder = np.copy(delta)
+        delta_reorder = delta_reorder[sorting_index, :]
+        delta_reorder = delta_reorder[:, sorting_index]
         plt.figure()
-        plt.imshow(delta)
+        plt.imshow(delta_reorder)
         plt.tick_params(bottom=False, top=True, labeltop=True, labelbottom=False)
         plt.xticks(start_position, np.sort(label_pop), rotation='horizontal',ha="left")
 
@@ -151,25 +152,45 @@ class SimulationInfo(object):
             all_pop_value = all_pop_value[all_pop_value > 0.00000001]
             plt.hist(all_pop_value, 15, label=population_label, density=1, alpha=0.75)
         plt.legend()
-
+        plt.xlabel("Allele sharing distance")
+        plt.ylabel("# pairwise hit")
         filePath = os.path.join(self.output_folder, "Time_per_pop.pdf")
         plt.savefig(filePath)
         plt.close()
         nb_population = len(label_pop)
-        for pop1_index in range(nb_population):
-            plt.figure()
-            for pop2_index in range(nb_population):
-                population_position1 = labels_individual == label_pop[pop1_index]
-                population_position2 = labels_individual == label_pop[pop2_index]
-                pop_mat = delta[np.ix_(population_position1, population_position2)]
-                all_pop_value = pop_mat.flatten()
-                all_pop_value = all_pop_value[all_pop_value > 0.00000001]
-                plt.hist(all_pop_value, 20, label=label_pop[pop1_index] + "-" + label_pop[pop2_index], density=1,
-                         alpha=0.5)
-            plt.legend(ncol=2)
-            plt.savefig(os.path.join(self.output_folder,f"time_pop_{label_pop[pop1_index]}.pdf"))
-            plt.close()
 
+        if nb_population < 4:
+            plt.figure()
+            for pop1_index in range(nb_population):
+                for pop2_index in range(pop1_index, nb_population):
+                    population_position1 = labels_individual == label_pop[pop1_index]
+                    population_position2 = labels_individual == label_pop[pop2_index]
+                    pop_mat = delta[np.ix_(population_position1, population_position2)]
+                    all_pop_value = pop_mat.flatten()
+                    all_pop_value = all_pop_value[all_pop_value > 0.00000001]
+                    plt.hist(all_pop_value, 20, label=label_pop[pop1_index] + "-" + label_pop[pop2_index], density=1,
+                             alpha=0.5)
+            plt.legend(ncol=3)
+            plt.xlabel("Allele sharing distance")
+            plt.ylabel("# pairwise hit")
+            plt.savefig(os.path.join(self.output_folder, f"all_pop.pdf"))
+            plt.close()
+        else:
+            for pop1_index in range(nb_population):
+                plt.figure()
+                for pop2_index in range(nb_population):
+                    population_position1 = np.where(labels_individual == label_pop[pop1_index])[0]
+                    population_position2 = np.where(labels_individual == label_pop[pop2_index])[0]
+                    pop_mat = delta[np.ix_(population_position2, population_position1)]
+                    all_pop_value = pop_mat.flatten()
+                    all_pop_value = all_pop_value[all_pop_value > 0.00000001]
+                    plt.hist(all_pop_value, 20, label=label_pop[pop1_index] + "-" + label_pop[pop2_index], density=1,
+                             alpha=0.5)
+                plt.legend(ncol=2)
+                plt.xlabel("Allele sharing distance")
+                plt.ylabel("# pairwise hit")
+                plt.savefig(os.path.join(self.output_folder, f"time_pop_{label_pop[pop1_index]}.pdf"))
+                plt.close()
 
     def plot_mds(self, coordinate, title: str):
         """Plot the MDS plot
@@ -182,6 +203,7 @@ class SimulationInfo(object):
         prop_cycle = prop_cycle*(1+len(np.unique(label_given))//len(prop_cycle))
         colors = prop_cycle.by_key()['color']
         for p in range(0, self.K, 2):
+        #for p in range(0, len(self.labels)-1, 2):
             q = p + 1
             plt.rcParams.update({'font.size': 22})
             fig, ax = plt.subplots(figsize=(15, 15))
