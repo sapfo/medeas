@@ -189,6 +189,7 @@ def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
         return b
 
     inits = np.zeros((npop-1,))
+    mean = np.zeros((npop - 1,))
     maxs = np.zeros((npop-1,))
     mins = np.zeros((npop-1,))
 
@@ -204,10 +205,11 @@ def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
             means.append(np.mean(sb))
             s_mins.append(sb.min())
             s_maxs.append(sb.max())
-        inits[k] = np.mean(means)
+        mean[k] = np.mean(means)
         mins[k] = min(s_mins)
         maxs[k] = max(s_maxs)
 
+    mean = mean / 2
     mins = T*mins/2
     maxs = T*maxs/2
     for i, (minimum, maximum) in enumerate(zip(mins, maxs)):
@@ -216,6 +218,7 @@ def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
         print(f"{100*'-'}")
         print(f"ns = {ns}")
         print('Inits:', inits)
+        print('Mean:', mean)
         print('Mins:', mins)
         print('Maxs:', maxs)
         tij = make_tij(inits)

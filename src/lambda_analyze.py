@@ -26,7 +26,7 @@ def find_T_and_t_within(file: str, label) -> Tuple[float, float]:
         upper_sub_matrix = np.triu_indices(nb_individual, k = 1)
         t_over_T = 0.5*np.mean(sub_matrix[upper_sub_matrix])
         ts_over_T[index_population] = t_over_T
-
+    print(f"ts/T =  {ts_over_T}")
     first_t = ts_over_T[0]
     T = 1/first_t
     ts = ts_over_T/first_t
