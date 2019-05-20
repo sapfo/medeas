@@ -23,8 +23,8 @@ from src.clustering import perform_clustering, find_tree, get_mds_coordinate, se
 simulation = SimulationInfo()
 
 if not simulation.skip_calculate_matrix:
-    compute_asd_matrix(1, simulation, txt_format=simulation.simulation)
-    compute_asd_matrix(2, simulation, txt_format=simulation.simulation)
+    compute_asd_matrix(1, simulation)
+    compute_asd_matrix(2, simulation)
 
 with open(simulation.asd_pattern.format(1), 'rb') as f:
      delta = pickle.load(f)

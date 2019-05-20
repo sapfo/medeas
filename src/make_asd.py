@@ -88,14 +88,11 @@ def process(data: 'np.ndarray[int]',
     return dists, norms
 
 
-def  compute_asd_matrix(pp: int, simulation, txt_format: bool = False) -> None:
+def  compute_asd_matrix(pp: int, simulation) -> None:
     """Calculate the distance matrix with Minkowski parameter 'pp'.
 
     'name' is the input file name (or format string) with SNP data.
-    'out_name' is the output binary file (pickle). If 'txt_format' is
-    True, the SNP data will be read from a single text file (useful for
-    tests with scrm), otherwise the data will be read from (binary)
-    chromosome files.
+    'out_name' is the output binary file (pickle).
     """
 
     # On Windows, processes execute the whole file before forking
@@ -120,14 +117,9 @@ def  compute_asd_matrix(pp: int, simulation, txt_format: bool = False) -> None:
 
     # ---------- global data
 
-    if txt_format:
-        with open(name) as f:
-            N = len(f.readline()) // 2
-            print(f'nb individual = {N}')
-    else:
-        with open(name.format(1), 'rb') as f:
-            N = pickle.load(f).shape[1]
-            print(f'nb individual = {N}')
+    with open(name) as f:
+        N = len(f.readline()) // 2
+        print(f'nb individual = {N}')
 
     tot_dists = np.zeros((N, N))
     tot_norms = np.zeros((N, N))
@@ -158,26 +150,21 @@ def  compute_asd_matrix(pp: int, simulation, txt_format: bool = False) -> None:
             end_i = start_i + bootsize
         remainder = data[start_i:]
 
-    if txt_format:
-        with open(name) as f:
-            while True:
-                data_lines = f.readlines(MAXSIZE)
-                print('Chunk loading started')
-                if not data_lines:
-                    break
-                data = np.array([np.fromstring(line, sep=' ',  # line[-cut:-1]
-                                               dtype='int8')
-                                 for line in data_lines])
-                # data = data[:, ::2] + data[:, 1::2]
-                print('Chunk loaded')
-                process_chunks(data)
 
-    else:
-        for n in chromosomes:
-            with open(name.format(n), 'rb') as f:
-                data = pickle.load(f)
-            print(f'Loaded data for chromosome: {n}')
+    with open(name) as f:
+        while True:
+            data_lines = f.readlines(MAXSIZE)
+            print('Chunk loading started')
+            if not data_lines:
+                break
+            data = np.array([np.fromstring(line, sep=' ',  # line[-cut:-1]
+                                           dtype='int8')
+                             for line in data_lines])
+            # data = data[:, ::2] + data[:, 1::2]
+            print('Chunk loaded')
             process_chunks(data)
+
+
 
     for i in range(N):
         delta[i, i] = 0

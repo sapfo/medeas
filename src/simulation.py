@@ -37,9 +37,6 @@ class SimulationInfo(object):
                             type=str, default=None
                             )
 
-
-        parser.add_argument("--simulation", help="Does the data come from a simulation",
-                            action="store_true")
         parser.add_argument("--skip_calculate_matrix",
                             help="Skip the computation of the distance matrices and the related MDS matrix",
                             action="store_true")
@@ -55,7 +52,6 @@ class SimulationInfo(object):
         self.chromosomes = range(1, args.n_chromosome + 1)
         self.bootsize = args.boot_window_size
         self.skip_calculate_matrix = args.skip_calculate_matrix
-        self.simulation = args.simulation
         self.bootstrap_number = args.bootstrap_number
         self.output_level = args.output_level
 
