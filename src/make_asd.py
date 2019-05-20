@@ -88,9 +88,9 @@ def process(data: 'np.ndarray[int]',
     return dists, norms
 
 
-def  compute_asd_matrix(pp: int, simulation) -> None:
-    """Calculate the distance matrix with Minkowski parameter 'pp'.
-
+def  compute_asd_matrix(simulation) -> None:
+    """Calculate the distance matrix for two Minkowsky parapeter pp.
+    Take care that here we are assuming haploid individuals!
     'name' is the input file name (or format string) with SNP data.
     'out_name' is the output binary file (pickle).
     """
@@ -101,12 +101,12 @@ def  compute_asd_matrix(pp: int, simulation) -> None:
     # Maybe process input file in chunks?
     # On POSIX everything is already fine because of "copy-on-write"
 
-    out_name =  simulation.asd_pattern.format(pp)
+
     name =  simulation.snps_pattern
     chromosomes =  simulation.chromosomes
     bootsize = simulation.bootsize
     label = simulation.labels_file
-    dist_func = lambda x: np.abs(x) ** pp
+    dist_func = lambda x: np.abs(x)
 
     # ---------- constants
 
@@ -172,10 +172,19 @@ def  compute_asd_matrix(pp: int, simulation) -> None:
     for i in range(N):
         for j in range(i + 1, N):
             delta[i, j] = delta[j, i] = tot_dists[i, j] / tot_norms[i, j]
-
-    delta = delta ** (1 / pp)
+    pp = 1
+    delta_1 = np.copy(delta)
+    delta_1 = delta_1 ** (1 / pp)
+    out_name =  simulation.asd_pattern.format(pp)
     with open(out_name, 'wb') as f:
-        pickle.dump(delta, f)
+        pickle.dump(delta_1, f)
+    pp = 2
+    delta_2 = np.copy(delta)
+    delta_2 = delta_2 ** (1 / pp)
+    out_name =  simulation.asd_pattern.format(pp)
+    with open(out_name, 'wb') as f:
+        pickle.dump(delta_2, f)
+
 
     # bootstraping ---------------
 
@@ -191,9 +200,20 @@ def  compute_asd_matrix(pp: int, simulation) -> None:
         for i in range(N):
             for j in range(i + 1, N):
                 delta[i, j] = delta[j, i] = tot_dists[i, j] / tot_norms[i, j]
-        delta = delta ** (1 / pp)
+
+        pp = 1
+        delta_1 = np.copy(delta)
+        delta_1 = delta_1 ** (1 / pp)
+        out_name = simulation.asd_pattern.format(pp)
         with open(out_name + f'.boot.{boot}', 'wb') as f:
-            pickle.dump(delta, f)
+            pickle.dump(delta_1, f)
+
+        pp = 2
+        delta_2 = np.copy(delta)
+        delta_2 = delta_2 ** (1 / pp)
+        out_name = simulation.asd_pattern.format(pp)
+        with open(out_name + f'.boot.{boot}', 'wb') as f:
+            pickle.dump(delta_2, f)
 
     print('Distance matrix computed')
     simulation.plot_distance_matrix(delta)
