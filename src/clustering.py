@@ -117,7 +117,7 @@ def set_tree_from_input(asd_file, simulation) -> Tuple[TreeNode, 'np.ndarray[int
     return tree
 
 def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
-                   new_tree: TreeNode, ns: 'np.ndarray[int]',
+                   tree: TreeNode, ns: 'np.ndarray[int]',
                    lambdas: 'np.ndarray[float]',
                    blocks: 'np.ndarray[np.ndarray[float]]',
                    output_level
@@ -152,7 +152,8 @@ def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
             constraints.append((current, previous))
             add_indices(right, current)
 
-    add_indices(new_tree)
+
+    add_indices(tree)
 
     if output_level == 2:
         print(f"d_ind = {d_ind}")
