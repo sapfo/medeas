@@ -22,9 +22,9 @@ def run_once(boot: int, simulation) -> None:
     while not distance_validity:
         if nbLoop == maxNbLoop: break
         nbLoop = nbLoop + 1
-        dists, constraints = find_distances(simulation.K, T,t_within, simulation.tree, simulation.ns, lambdas,
+        dists, constraints_D, constraints_ts = find_distances(simulation.K, T,t_within, simulation.tree, simulation.ns, lambdas,
                                             distance_subblocks, simulation.output_level)
-        distance_validity = validate_dists(dists.x, constraints)
+        distance_validity = validate_dists(dists.x, t_within, constraints_D, constraints_ts)
         if simulation.output_level >= 1:
             print('Found distances:', dists.x)
             if distance_validity:

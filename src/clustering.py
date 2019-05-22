@@ -125,6 +125,7 @@ def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
     """Find split times from the tree topology."""
     d_ind = -np.ones((npop, npop), dtype='int16')
     constraints = []
+    constraints_coal_time = []
 
     def add_indices(tr: TreeNode, current: int = 0) -> None:
         """For every pair of populations substitute an index of corresponding split time.
@@ -148,13 +149,17 @@ def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
             constraints.append((current, previous))
             add_indices(left, current)
             current += 1 + sum([1 for _ in left.non_tips()])
+        else:
+            constraints_coal_time.append((previous,left.name))
         if not right.is_tip():
             constraints.append((current, previous))
             add_indices(right, current)
+        else:
+            constraints_coal_time.append((previous, right.name))
 
 
     add_indices(tree)
-
+    print(f"constraints_coal_time: {constraints_coal_time}")
     if output_level == 2:
         print(f"d_ind = {d_ind}")
 
@@ -252,16 +257,26 @@ def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
         print(f"{25*'-'} \n b = \n {b}")
         print(f"{100*'-'}")
 
-    return res, constraints
+    return res, constraints, constraints_coal_time
 
 
 def validate_dists(dists: 'np.ndarray[float]',
-                   constraints: List[Tuple[int, int]]) -> bool:
+                   ts: 'np.ndarray[float]',
+                   constraints: List[Tuple[int, int]],
+                   constraints_coal: List[Tuple[int, str]]
+                   ) -> bool:
     """Verify if the given split times satisfy the 'constrains' obtained from
     the tree topology.
     """
+    print(f"ts: {ts}")
     for c in constraints:
         if not smaller(dists[c[0]], dists[c[1]]):
+            return False
+    for c in constraints_coal:
+        tts = ts[int(c[1])]
+        d = dists[c[0]]
+        if not smaller(tts, d):
+        #if not smaller(dists[c[0]],ts[int(c[1])]):
             return False
     for dist in dists:
         if dist < -0.01:
