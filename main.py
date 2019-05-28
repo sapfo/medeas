@@ -27,7 +27,10 @@ if not simulation.skip_calculate_matrix:
 
 with open(simulation.asd_pattern.format(1), 'rb') as f:
      delta = pickle.load(f)
+
 simulation.plot_distance_matrix(delta)
+simulation.export_sfs()
+
 if simulation.output_level > 1:
     print(f"number of individual in the distance matrix: {len(delta)}")
 calc_mds(simulation.asd_pattern.format(1), simulation.vec_pattern.format(1))

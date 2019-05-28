@@ -88,6 +88,18 @@ class SimulationInfo(object):
         self.populations = populations
         self.K = len(populations)
 
+    def export_sfs(self):
+        plt.figure()
+        plt.plot(self.sfs[0],self.sfs[1])
+        plt.xlabel("Mutation Frequency")
+        plt.ylabel("Frequency count")
+        plt.suptitle("Site frequency spectrum")
+        filePath = os.path.join(self.output_folder, "SFS.pdf")
+        plt.savefig(filePath)
+        plt.close()
+        with open(os.path.join(self.output_folder, "SFS.txt"), 'w') as f:
+            np.savetxt(f,  np.transpose(self.sfs).astype(int),fmt='%i')
+
     def plot_eigenvalues(self):
 
         with open(self.vec_pattern.format(2), 'rb') as f:

@@ -150,7 +150,7 @@ def  compute_asd_matrix(simulation) -> None:
             end_i = start_i + bootsize
         remainder = data[start_i:]
 
-
+    pre_sfs = np.empty((0))
     with open(name) as f:
         while True:
             data_lines = f.readlines(MAXSIZE)
@@ -162,7 +162,18 @@ def  compute_asd_matrix(simulation) -> None:
                              for line in data_lines])
             # data = data[:, ::2] + data[:, 1::2]
             print('Chunk loaded')
+
+            nb_mut = np.sum(data==2,axis=1)
+            nb_missing = np.sum(data==0,axis=1)
+            nb_mut[np.where((N - nb_missing)==0)] = 0 ## removing in a stupid way site with no data at all
+            nb_missing[np.where((N - nb_missing)==0)] = 1 ## removing in a stupid way site with no data at all
+            freq = nb_mut/(N - nb_missing)
+            nb_other_mut = np.random.binomial(nb_missing,freq,len(nb_mut))
+            nb_mut = nb_mut + nb_other_mut
+            pre_sfs = np.append(pre_sfs, nb_mut)
             process_chunks(data)
+    sfs = np.unique(pre_sfs, return_counts = True)
+    simulation.sfs = sfs
 
 
 
