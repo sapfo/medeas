@@ -170,6 +170,7 @@ def  compute_asd_matrix(simulation) -> None:
             freq = nb_mut/(N - nb_missing)
             nb_other_mut = np.random.binomial(nb_missing,freq,len(nb_mut))
             nb_mut = nb_mut + nb_other_mut
+            nb_mut[nb_mut > N/2] = N - nb_mut[nb_mut > N/2] # Folding the SFS, since 0 and 1 are likely to be not well defined
             pre_sfs = np.append(pre_sfs, nb_mut)
             process_chunks(data)
     sfs = np.unique(pre_sfs, return_counts = True)
