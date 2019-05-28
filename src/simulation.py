@@ -89,11 +89,21 @@ class SimulationInfo(object):
         self.K = len(populations)
 
     def export_sfs(self):
+        self.sfs = np.array(self.sfs)
+        max_freq = len(self.labels)
         plt.figure()
-        plt.plot(self.sfs[0],self.sfs[1])
+        if(len(self.sfs[0]) < 25):
+            plt.bar(self.sfs[0]/max_freq,self.sfs[1], width=0.5/max_freq)
+        else:
+            plt.subplot(211)
+            plt.bar(self.sfs[0,0:25]/max_freq, self.sfs[1,0:25],  width=0.5/max_freq)
+            plt.ylabel("Site count")
+            plt.subplot(212)
+            plt.bar(self.sfs[0]/max_freq, self.sfs[1],  width=0.5/max_freq)
         plt.xlabel("Mutation Frequency")
-        plt.ylabel("Frequency count")
+        plt.ylabel("Site count")
         plt.suptitle("Site frequency spectrum")
+
         filePath = os.path.join(self.output_folder, "SFS.pdf")
         plt.savefig(filePath)
         plt.close()

@@ -163,7 +163,7 @@ def  compute_asd_matrix(simulation) -> None:
             # data = data[:, ::2] + data[:, 1::2]
             print('Chunk loaded')
 
-            nb_mut = np.sum(data==2,axis=1)
+            nb_mut = np.sum(data==1,axis=1)
             nb_missing = np.sum(data==0,axis=1)
             nb_mut[np.where((N - nb_missing)==0)] = 0 ## removing in a stupid way site with no data at all
             nb_missing[np.where((N - nb_missing)==0)] = 1 ## removing in a stupid way site with no data at all
@@ -173,7 +173,7 @@ def  compute_asd_matrix(simulation) -> None:
             pre_sfs = np.append(pre_sfs, nb_mut)
             process_chunks(data)
     sfs = np.unique(pre_sfs, return_counts = True)
-    simulation.sfs = sfs
+    simulation.sfs = np.array(sfs)
 
 
 
