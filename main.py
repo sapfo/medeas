@@ -62,12 +62,13 @@ simulation.plot_tree()
 simulation.all_distance = []
 simulation.all_effective_size = []
 simulation.all_T = []
-for boot in range(-1, simulation.bootstrap_number):
-    (distances, effective_size, T) = run_once(boot, simulation)
-    if distances is not None:
-        simulation.all_distance.append(distances)
-    simulation.all_effective_size.append(effective_size)
-    simulation.all_T.append(T)
+if simulation.K > 1:
+    for boot in range(-1, simulation.bootstrap_number):
+        (distances, effective_size, T) = run_once(boot, simulation)
+        if distances is not None:
+            simulation.all_distance.append(distances)
+        simulation.all_effective_size.append(effective_size)
+        simulation.all_T.append(T)
 
 
 simulation.generate_final_output()

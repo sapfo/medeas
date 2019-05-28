@@ -89,6 +89,9 @@ def find_tree(npop: int, asd_file: str,
     if npop == 2:
         tree = read(StringIO('(0:0.1, 1:0.1);'), format='newick', into=TreeNode)
         return tree
+    if npop == 1:
+        tree = read(StringIO('();'), format='newick', into=TreeNode)
+        return tree
     arr = arr[:, :npop + OFFSET]
     ds = np.zeros((npop, npop))
     coords = np.zeros((npop, npop+OFFSET))
