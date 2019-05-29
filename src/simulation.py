@@ -164,7 +164,7 @@ class SimulationInfo(object):
         plt.close()
 
         for population_label in label_pop:
-            population_position = sorted_labels_individual == population_label
+            population_position = labels_individual == population_label
             pop_mat = delta[np.ix_(population_position, population_position)]
             all_pop_value = pop_mat.flatten()
             all_pop_value = all_pop_value[all_pop_value > 0.00000001]
