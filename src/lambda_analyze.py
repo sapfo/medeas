@@ -8,15 +8,13 @@ import pickle
 
 
 
-def find_T_and_t_within(file: str, label) -> Tuple[float, float]:
+def find_T_and_t_within(file: str, label, populations) -> Tuple[float, float]:
     """Find total tree length T and effective number of markers L using
     the bulk eigenvalues from eigensystem stored in (pickled) 'file'.
     """
     with open(file, 'rb') as f:
         delta = pickle.load(f)
 
-
-    populations = np.unique(label)
     np_population = len(populations)
     ts_over_T = np.zeros(np_population)
     for index_population, population in enumerate(populations):

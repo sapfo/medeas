@@ -14,7 +14,7 @@ def run_once(boot: int, simulation) -> None:
         lambdas, vec = pickle.load(f)
     with open(simulation.asd_pattern.format(1) + suffix, 'rb') as f:
         delta = pickle.load(f)
-    T, t_within = find_T_and_t_within(simulation.asd_pattern.format(1) + suffix, simulation.labels)
+    T, t_within = find_T_and_t_within(simulation.asd_pattern.format(1) + suffix, simulation.labels, simulation.populations)
     distance_subblocks = build_distance_subblock(simulation.K, simulation.numerical_labels, delta)
     distance_validity = False
     nbLoop = 0

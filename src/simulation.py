@@ -84,9 +84,10 @@ class SimulationInfo(object):
 
         labels = [l.split()[0] for l in lines]
         self.labels = np.array(labels)
-        populations, self.numerical_labels = np.unique(self.labels,return_inverse=True)
-        self.populations = populations
-        self.K = len(populations)
+        _, index, numerical_labels = np.unique(self.labels,return_inverse=True, return_index = True)
+        self.populations = self.labels[np.sort(index)]
+        self.numerical_labels = np.sort(numerical_labels)
+        self.K = len(self.populations)
 
     def export_sfs(self):
         self.sfs = np.array(self.sfs)
@@ -141,7 +142,7 @@ class SimulationInfo(object):
             lines = f.readlines()
         labels_individual = np.array([l.split()[0] for l in lines])
         sorted_labels_individual = np.sort(labels_individual)
-        label_pop = np.unique(labels_individual)
+        label_pop = self.populations
         sorting_index = np.argsort(labels_individual)
         individual_per_pop = [np.sum(labels_individual == label) for label in np.sort(label_pop)]
         end_position = np.cumsum(individual_per_pop)
