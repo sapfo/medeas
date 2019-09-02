@@ -6,6 +6,8 @@ import matplotlib.lines as mlines
 import subprocess
 import datetime
 import sys
+from  colorsys import rgb_to_hsv as hsv
+
 from skbio.tree import nj, TreeNode
 import pickle
 from src.clustering import get_mds_coordinate
@@ -82,7 +84,8 @@ class SimulationInfo(object):
         with open(self.labels_file) as f:
             lines = f.readlines()
 
-        labels = [l.split()[0] for l in lines]
+        #labels = [l.split()[0] for l in lines]
+        labels = [l.rstrip() for l in lines]
         self.labels = np.array(labels)
         _, index, numerical_labels = np.unique(self.labels,return_inverse=True, return_index = True)
         self.populations = self.labels[np.sort(index)]
@@ -109,10 +112,9 @@ class SimulationInfo(object):
         plt.savefig(filePath)
         plt.close()
         with open(os.path.join(self.output_folder, "SFS.txt"), 'w') as f:
-            np.savetxt(f,  np.transpose(self.sfs).astype(int),fmt='%i')
+            np.savetxt(f, np.transpose(self.sfs).astype(int),fmt='%i')
 
     def plot_eigenvalues(self):
-
         with open(self.vec_pattern.format(2), 'rb') as f:
             lambdas, vecs = pickle.load(f)
         lambdas = -np.sort(-lambdas)
@@ -194,7 +196,7 @@ class SimulationInfo(object):
             plt.ylabel("# pairwise hit")
             plt.savefig(os.path.join(self.output_folder, f"all_pop.pdf"))
             plt.close()
-        else:
+        elif nb_population < 10:
             for pop1_index in range(nb_population):
                 plt.figure()
                 for pop2_index in range(nb_population):
@@ -218,17 +220,22 @@ class SimulationInfo(object):
         label_given_index = np.copy(label_given)
         for index_label, label in enumerate(np.unique(label_given)):
             label_given_index[label_given == label] = index_label
-        prop_cycle = plt.rcParams['axes.prop_cycle']
-        prop_cycle = prop_cycle*(1+len(np.unique(label_given))//len(prop_cycle))
-        colors = prop_cycle.by_key()['color']
-        for p in range(0, self.K, 2):
-        #for p in range(0, len(self.labels)-1, 2):
+        if (self.K < 9):
+            prop_cycle = plt.rcParams['axes.prop_cycle']
+            prop_cycle = prop_cycle*(1+len(np.unique(label_given))//len(prop_cycle))
+            colors = prop_cycle.by_key()['color']
+        else:
+            cmap = plt.get_cmap('jet')
+            colors = cmap(np.linspace(0, 1.0, self.K))
+
+        #for p in range(0, self.K, 2):
+        for p in range(0, len(self.labels)-1, 2):
             q = p + 1
             plt.rcParams.update({'font.size': 22})
             fig, ax = plt.subplots(figsize=(15, 15))
             for population_index, population_name in enumerate(np.unique(label_given)):
                 position_population = np.where(population_name == label_given)
-                color_value = colors[population_index%9]
+                color_value = colors[population_index]
 
                 ax.scatter(coordinate.T[p, position_population].ravel(), coordinate.T[q, position_population].ravel(), c=color_value, s=75, alpha = 0.6)
             plt.legend(np.unique(label_given))
@@ -239,10 +246,12 @@ class SimulationInfo(object):
             if not os.path.isdir(dir_plot):
                 os.mkdir(dir_plot)
             markers_color = [mlines.Line2D([], [], color=marker_color, marker="o", linestyle='None') for marker_color in colors]
-            plt.legend(markers_color, np.unique(label_given) , title="Population")
+            nb_column = self.K//14 + 1
+            plt.legend(markers_color, np.unique(label_given) , title="Population",ncol=nb_column,bbox_to_anchor=(1.04, 0.5), loc="center left", borderaxespad=0)
+
             ax.set_xlabel(f'PC. {p+1}')
             ax.set_ylabel(f'PC. {q+1}')
-            fig.savefig(os.path.join(dir_plot, f'{title}{p+1}_{q+1}.pdf'))
+            fig.savefig(os.path.join(dir_plot, f'{title}{p+1}_{q+1}.pdf'),bbox_inches="tight")
             plt.close()
 
     def plot_tree(self):
