@@ -23,8 +23,6 @@ class SimulationInfo(object):
         parser.add_argument("-lf", "--labels_file", help="File containing the labels",
                             required=True)
         parser.add_argument("-of", "--output_folder", help="Folder where results and temporal data should be store")
-        parser.add_argument("--n_chromosome", help="Number of chromosome If they are stored in different file",
-                            type=int, default=1)
 
         parser.add_argument("-bws", "--boot_window_size",
                             help="How many markers do we have in each bootstraping windows",

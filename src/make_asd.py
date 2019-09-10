@@ -103,7 +103,6 @@ def  compute_asd_matrix(simulation) -> None:
 
 
     name =  simulation.snps_pattern
-    chromosomes =  simulation.chromosomes
     bootsize = simulation.bootsize
     label = simulation.labels_file
     dist_func = lambda x: np.abs(x)
