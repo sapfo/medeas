@@ -1,0 +1,75 @@
+import sys
+configfile: "config.yaml"
+
+
+if "input_vcf" in config.keys():
+    input_vcf = config["input_vcf"]
+else:
+    sys.exit('The parameter input_vcf should be specified in config.yaml')
+
+if "input_vcf" in config.keys():
+    lab_file = config["label_file"]
+else:
+    sys.exit('The parameter label_file should be specified in config.yaml')
+
+
+rule all:
+    input:
+        "result/result.log"
+
+rule make_tbed:
+    input:
+        input_vcf
+    output:
+        "plink/all_individual.tped"
+    conda:
+        "envs/base.yaml"
+    shell:
+        "plink --vcf  {input}  --allow-extra-chr --recode12 --transpose --out plink/all_individual"
+
+
+rule remove_useless_column:
+    input:
+        "plink/all_individual.tped"
+    output:
+        "med/all_haplotype.med"
+    shell:
+        " cut -d\" \" -f 5- {input} > {output}"
+
+
+rule make_med_file:
+    input:
+        "med/all_haplotype.med"
+    output:
+        "med/all_haplotype_randomized.med"
+    shell:
+	    "awk 'BEGIN{{srand()}}{{for (i=0;i<NF/2;i++) if (rand() > 0.5) printf \"%s %s \", $(2*i+1) ,$(2*i+2); else printf \"%s %s \", $(2*i+2), $(2*i+1);print \"\"}}' "
+	    "{input} > "
+	    "{output}"
+
+rule make_diploid_label:
+    input:
+        lab_file = lab_file
+    output:
+        lab_diploid_file = "label_haploid.lab"
+    shell:
+        "awk '{{print $1}}{{print $1}}' {input.lab_file} > {output.lab_diploid_file}"
+
+
+rule run_medeas:
+    input:
+        med_file = "med/all_haplotype_randomized.med",
+        lab_diploid_file = "label_haploid.lab"
+    params:
+        folder = "result/"
+    output:
+        log = "result/result.log"
+    conda:
+        "envs/base.yaml"
+    shell:
+        "python ../main.py "
+        "-sf {input.med_file} "
+        "-lf {input.lab_diploid_file} "
+        "-of {params.folder} "
+        "-bws 10000 "
+        "> {output.log}"

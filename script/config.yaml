@@ -1,0 +1,2 @@
+input_vcf: CEU_YRI.chr22.vcf.gz
+label_file: label.lab
