@@ -226,8 +226,8 @@ class SimulationInfo(object):
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, self.K))
 
-        #for p in range(0, self.K, 2):
-        for p in range(0, len(self.labels)-1, 2):
+        for p in range(0, self.K, 2):
+        #for p in range(0, len(self.labels)-1, 2):
             q = p + 1
             plt.rcParams.update({'font.size': 22})
             fig, ax = plt.subplots(figsize=(15, 15))
@@ -280,17 +280,17 @@ class SimulationInfo(object):
         print("generating final output")
         print(self.output_folder)
         print(self.all_distance)
-        with open(os.path.join(self.output_folder, "all_extrapolated_distances.txt"), 'w') as f:
+        with open(os.path.join(self.output_folder, "between_population_coalescence_time.txt"), 'w') as f:
             for distances in self.all_distance:
                 for distance in distances:
                     f.write(str(distance) + "\t")
                 f.write("\n")
-        with open(os.path.join(self.output_folder, "all_extrapolated_effective_size.txt"), 'w') as f:
+        with open(os.path.join(self.output_folder, "within_population_coalescence_time.txt"), 'w') as f:
             for effective_sizes in self.all_effective_size:
                 for effective_size in effective_sizes:
                     f.write(str(effective_size) + "\t")
                 f.write("\n")
-        with open(os.path.join(self.output_folder, "all_extrapolated_T.txt"), 'w') as f:
+        with open(os.path.join(self.output_folder, "all_T.txt"), 'w') as f:
             for T in self.all_T:
                     f.write(str(T)+"\n")
         with open(os.path.join(self.output_folder, "MDS_coordinate.txt"), 'w') as f:
@@ -301,4 +301,3 @@ class SimulationInfo(object):
             self.end_time = datetime.datetime.now().replace(microsecond=0)
             f.write(f'Simulation ended successfully at: {self.end_time} \n')
             f.write(f'job duration:  {self.end_time - self.starting_time} \n')
-            f.write(f'Let\'s hope that the results make sense! \n')
