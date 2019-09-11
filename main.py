@@ -56,8 +56,8 @@ if simulation.topology == None:
 else:
     tree = set_tree_from_input(simulation.asd_pattern.format(1), simulation)
 
-simulation.tree = tree
-simulation.plot_tree()
+simulation.set_tree(tree)
+simulation.save_tree()
 
 
 simulation.all_distance = []

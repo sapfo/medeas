@@ -6,6 +6,7 @@ import matplotlib.lines as mlines
 import subprocess
 import datetime
 import sys
+import copy
 from  colorsys import rgb_to_hsv as hsv
 
 from skbio.tree import nj, TreeNode
@@ -49,7 +50,6 @@ class SimulationInfo(object):
         self.snps_pattern = args.snps_file
 
         self.labels_file = args.labels_file
-        self.chromosomes = range(1, args.n_chromosome + 1)
         self.bootsize = args.boot_window_size
         self.skip_calculate_matrix = args.skip_calculate_matrix
         self.bootstrap_number = args.bootstrap_number
@@ -210,6 +210,11 @@ class SimulationInfo(object):
                 plt.ylabel("# pairwise hit")
                 plt.savefig(os.path.join(self.output_folder, f"time_pop_{label_pop[pop1_index]}.pdf"))
                 plt.close()
+    def set_tree(self, tree: 'skbio.tree'):
+        self.tree = tree
+        self.tree_with_name = tree.deepcopy()
+        for leave in self.tree_with_name.tips():
+            leave.name = self.populations[int(leave.name)]
 
     def plot_mds(self, coordinate, title: str):
         """Plot the MDS plot
@@ -252,12 +257,12 @@ class SimulationInfo(object):
             fig.savefig(os.path.join(dir_plot, f'{title}{p+1}_{q+1}.pdf'),bbox_inches="tight")
             plt.close()
 
-    def plot_tree(self):
+    def save_tree(self):
         tree_filename = os.path.join(self.output_folder, "tree.txt")
         with open(tree_filename, "w") as f:
-            f.write(self.tree.ascii_art())
+            f.write(self.tree_with_name.ascii_art())
             f.write("\n")
-            f.write(str(self.tree))
+            f.write(str(self.tree_with_name))
 
     def generate_initial_output(self,args):
         with open(self.logfile, "w") as f:
