@@ -12,7 +12,7 @@ from  colorsys import rgb_to_hsv as hsv
 from skbio.tree import nj, TreeNode
 import pickle
 from src.clustering import get_mds_coordinate
-
+from src.clustering import add_indices
 class SimulationInfo(object):
 
     def __init__(self):
@@ -62,9 +62,6 @@ class SimulationInfo(object):
             os.makedirs(self.output_folder)
         self.logfile = os.path.join(self.output_folder, "simulation.log")
         self.generate_initial_output(args)
-
-
-
 
         asd_folder = "asd_matrices"
         mds_folder = "MDS_eigensystem"
@@ -210,11 +207,28 @@ class SimulationInfo(object):
                 plt.ylabel("# pairwise hit")
                 plt.savefig(os.path.join(self.output_folder, f"time_pop_{label_pop[pop1_index]}.pdf"))
                 plt.close()
+
     def set_tree(self, tree: 'skbio.tree'):
         self.tree = tree
         self.tree_with_name = tree.deepcopy()
         for leave in self.tree_with_name.tips():
             leave.name = self.populations[int(leave.name)]
+        # Defining the name for the population split
+        d_ind = -np.ones((self.K, self.K), dtype='int16')
+        constraints = []
+        constraints_coal_time = []
+        add_indices(tree, d_ind, constraints, constraints_coal_time)
+
+        self.split_names = []
+        for index_split in range(self.K - 1):
+            for row in d_ind:
+                if index_split in row:
+                    group_pop_1 = np.where(row == index_split)[0]
+                    group_pop_2 = np.where(index_split == d_ind[group_pop_1[0]])[0]
+                    self.split_names.append((group_pop_1,group_pop_2))
+                    break
+
+
 
     def plot_mds(self, coordinate, title: str):
         """Plot the MDS plot
@@ -258,11 +272,13 @@ class SimulationInfo(object):
             plt.close()
 
     def save_tree(self):
+        """Write the information about the infered tree into a file"""
         tree_filename = os.path.join(self.output_folder, "tree.txt")
         with open(tree_filename, "w") as f:
             f.write(self.tree_with_name.ascii_art())
             f.write("\n")
             f.write(str(self.tree_with_name))
+
 
     def generate_initial_output(self,args):
         with open(self.logfile, "w") as f:
@@ -286,11 +302,20 @@ class SimulationInfo(object):
         print(self.output_folder)
         print(self.all_distance)
         with open(os.path.join(self.output_folder, "between_population_coalescence_time.txt"), 'w') as f:
+            for split_name in self.split_names:
+                f.write("-".join(self.populations[split_name[0]]))
+                f.write("/")
+                f.write("-".join(self.populations[split_name[1]]))
+                f.write("\t")
+            f.write("\n")
             for distances in self.all_distance:
                 for distance in distances:
                     f.write(str(distance) + "\t")
                 f.write("\n")
         with open(os.path.join(self.output_folder, "within_population_coalescence_time.txt"), 'w') as f:
+            for population in self.populations:
+                f.write(population + "\t")
+            f.write("\n")
             for effective_sizes in self.all_effective_size:
                 for effective_size in effective_sizes:
                     f.write(str(effective_size) + "\t")

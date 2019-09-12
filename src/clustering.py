@@ -119,53 +119,52 @@ def set_tree_from_input(asd_file, simulation) -> Tuple[TreeNode, 'np.ndarray[int
     print(tree.ascii_art())
     return tree
 
+def add_indices(tr: TreeNode, d_ind: 'np.ndarray[int]',constraints: List,constraints_coal_time: List, current: int = 0) -> None:
+    """For every pair of populations substitute an index of corresponding split time.
+    Append distance constraints that correspond to given tree."""
+    left = tr.children[0]
+    right = tr.children[1]
+    if left.is_tip():
+        l_ind = [int(left.name)]
+    else:
+        l_ind = list(map(lambda x: int(x.name), left.tips()))
+    if right.is_tip():
+        r_ind = [int(right.name)]
+    else:
+        r_ind = list(map(lambda x: int(x.name), right.tips()))
+    for i in l_ind:
+        for j in r_ind:
+            d_ind[i, j] = d_ind[j, i] = current
+    previous = current
+    current += 1
+    if not left.is_tip():
+        constraints.append((current, previous))
+        add_indices(left, d_ind, constraints,constraints_coal_time, current)
+        current += 1 + sum([1 for _ in left.non_tips()])
+    else:
+        constraints_coal_time.append((previous,left.name))
+    if not right.is_tip():
+        constraints.append((current, previous))
+        add_indices(right, d_ind, constraints,constraints_coal_time, current)
+    else:
+        constraints_coal_time.append((previous, right.name))
+
 def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
                    tree: TreeNode, ns: 'np.ndarray[int]',
                    lambdas: 'np.ndarray[float]',
                    blocks: 'np.ndarray[np.ndarray[float]]',
                    output_level
                    ) -> Tuple[OptimizeResult, List[Tuple[int, int]]]:
-    """Find split times from the tree topology."""
+    """Find coalescence times from the tree topology."""
     d_ind = -np.ones((npop, npop), dtype='int16')
     constraints = []
     constraints_coal_time = []
 
-    def add_indices(tr: TreeNode, current: int = 0) -> None:
-        """For every pair of populations substitute an index of corresponding split time.
-        Append distance constraints that correspond to given tree."""
-        left = tr.children[0]
-        right = tr.children[1]
-        if left.is_tip():
-            l_ind = [int(left.name)]
-        else:
-            l_ind = list(map(lambda x: int(x.name), left.tips()))
-        if right.is_tip():
-            r_ind = [int(right.name)]
-        else:
-            r_ind = list(map(lambda x: int(x.name), right.tips()))
-        for i in l_ind:
-            for j in r_ind:
-                d_ind[i, j] = d_ind[j, i] = current
-        previous = current
-        current += 1
-        if not left.is_tip():
-            constraints.append((current, previous))
-            add_indices(left, current)
-            current += 1 + sum([1 for _ in left.non_tips()])
-        else:
-            constraints_coal_time.append((previous,left.name))
-        if not right.is_tip():
-            constraints.append((current, previous))
-            add_indices(right, current)
-        else:
-            constraints_coal_time.append((previous, right.name))
+    add_indices(tree, d_ind, constraints, constraints_coal_time)
 
-
-    add_indices(tree)
-    print(f"constraints_coal_time: {constraints_coal_time}")
     if output_level == 2:
         print(f"d_ind = {d_ind}")
-
+        print(f"constraints_coal_time: {constraints_coal_time}")
     def make_tij(ts: List[int]) -> 'np.ndarray[float]':
         """Make distance (split time) matrix from the given vector of
         split times 'Dv'.
