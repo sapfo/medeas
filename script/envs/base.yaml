@@ -4,3 +4,9 @@ channels:
 dependencies:
   - plink = 1.90b4
   - python = 3.6
+  - matplotlib
+  - numpy
+  - scipy
+  - scikit-learn
+  - scikit-bio
+
