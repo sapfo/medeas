@@ -145,6 +145,9 @@ class SimulationInfo(object):
         with open(self.labels_file) as f:
             lines = f.readlines()
         labels_individual = np.array([l.split()[0] for l in lines])
+        if not len(delta) == len(labels_individual):
+            sys.exit("Error: The number of individual in the label file is not the same as the number of individual\
+in the distance matrix. Exiting Now.")
         sorted_labels_individual = np.sort(labels_individual)
         label_pop = self.populations
         sorting_index = np.argsort(labels_individual)
