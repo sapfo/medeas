@@ -19,15 +19,18 @@ from src.mds import calc_mds
 from src.lambda_analyze import find_T_and_t_within
 from single_pass import run_once
 from src.clustering import perform_clustering, find_tree, get_mds_coordinate, set_tree_from_input, build_population_dimension
-
+import sys
 simulation = SimulationInfo()
-
 if not simulation.skip_calculate_matrix:
-    compute_asd_matrix(simulation)
+    try:
+        compute_asd_matrix(simulation)
+    except:
+        sys.exit("Error: A problem occurs when computing the distance matrix. Please check that your genotype matrix is in the right format.")
     simulation.export_sfs()
 
 with open(simulation.asd_pattern.format(1), 'rb') as f:
      delta = pickle.load(f)
+
 
 simulation.plot_distance_matrix(delta)
 
