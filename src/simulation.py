@@ -48,8 +48,15 @@ class SimulationInfo(object):
         args = parser.parse_args()
 
         self.snps_pattern = args.snps_file
+        if not os.path.isfile(self.snps_pattern):
+            sys.exit("Error: The file containing the genotype does not exist. Exiting Now.")
 
         self.labels_file = args.labels_file
+        if not os.path.isfile(self.labels_file):
+            sys.exit("Error: The file containing the label does not exist. Exiting Now.")
+
+
+
         self.bootsize = args.boot_window_size
         self.skip_calculate_matrix = args.skip_calculate_matrix
         self.bootstrap_number = args.bootstrap_number
