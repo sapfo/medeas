@@ -87,7 +87,7 @@ class SimulationInfo(object):
                 lines = f.readlines()
         except:
             sys.exit(
-                "Error: A problem occurs when computing the distance matrix. Please check that your genotype matrix is in the right format.")
+                "Error: A problem occurs when loading the label file. Please check that you use the right format.")
 
         #labels = [l.split()[0] for l in lines]
         labels = [l.rstrip() for l in lines]
