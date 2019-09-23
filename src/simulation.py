@@ -82,9 +82,12 @@ class SimulationInfo(object):
         self.asd_pattern = os.path.join(asd_full_path, 'p{}.asd.data')
         self.vec_pattern = os.path.join(mds_full_path, 'p{}.vecs.data')
 
-
-        with open(self.labels_file) as f:
-            lines = f.readlines()
+        try:
+            with open(self.labels_file) as f:
+                lines = f.readlines()
+        except:
+            sys.exit(
+                "Error: A problem occurs when computing the distance matrix. Please check that your genotype matrix is in the right format.")
 
         #labels = [l.split()[0] for l in lines]
         labels = [l.rstrip() for l in lines]
