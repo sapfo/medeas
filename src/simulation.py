@@ -143,6 +143,9 @@ class SimulationInfo(object):
         plt.savefig(filePath)
         plt.close()
 
+    def pops_contain_at_least_2_individual(self):
+        _, counts = np.unique(self.labels,return_counts = True)
+        return all(counts > 1)
 
     def plot_distance_matrix(self, delta):
         with open(self.labels_file) as f:
@@ -344,3 +347,4 @@ in the distance matrix. Exiting Now.")
             self.end_time = datetime.datetime.now().replace(microsecond=0)
             f.write(f'Simulation ended successfully at: {self.end_time} \n')
             f.write(f'job duration:  {self.end_time - self.starting_time} \n')
+

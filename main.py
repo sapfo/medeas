@@ -66,14 +66,15 @@ simulation.save_tree()
 simulation.all_distance = []
 simulation.all_effective_size = []
 simulation.all_T = []
-if simulation.K > 1:
+if simulation.K > 1 and simulation.pops_contain_at_least_2_individual():
     for boot in range(-1, simulation.bootstrap_number):
         (distances, effective_size, T) = run_once(boot, simulation)
         if distances is not None:
             simulation.all_distance.append(distances)
         simulation.all_effective_size.append(effective_size)
         simulation.all_T.append(T)
-
+else:
+    exit("Error: Unable to perform the time inference. You should have more than one population and each population should have more than one individual.")
 
 simulation.generate_final_output()
 
