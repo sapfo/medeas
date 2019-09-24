@@ -188,20 +188,27 @@ in the distance matrix. Exiting Now.")
         filePath = os.path.join(self.output_folder, "plot_distance.pdf")
         plt.savefig(filePath)
         plt.close()
-
-        for population_label in label_pop:
+        label_given = np.array(self.labels)
+        if (self.K < 9):
+            prop_cycle = plt.rcParams['axes.prop_cycle']
+            prop_cycle = prop_cycle*(1+len(np.unique(label_given))//len(prop_cycle))
+            colors = prop_cycle.by_key()['color']
+        else:
+            cmap = plt.get_cmap('jet')
+            colors = cmap(np.linspace(0, 1.0, self.K))
+        for population_index, population_label in enumerate(label_pop):
             population_position = labels_individual == population_label
             pop_mat = delta[np.ix_(population_position, population_position)]
             all_pop_value = pop_mat.flatten()
             all_pop_value = all_pop_value[all_pop_value > 0.00000001]
-            plt.hist(all_pop_value, 15, label=population_label, density=1, alpha=0.75)
+            plt.hist(all_pop_value, 15, label=population_label, density=1, alpha=0.75,color = colors[population_index])
         plt.legend()
         plt.xlabel("Allele sharing distance")
         plt.ylabel("# pairwise hit")
         filePath = os.path.join(self.output_folder, "Time_per_pop.pdf")
         plt.savefig(filePath)
         plt.close()
-        nb_population = len(label_pop)
+        label_given = nb_population = len(label_pop)
 
         if nb_population < 4:
             plt.figure()
@@ -219,7 +226,7 @@ in the distance matrix. Exiting Now.")
             plt.ylabel("# pairwise hit")
             plt.savefig(os.path.join(self.output_folder, f"all_pop.pdf"))
             plt.close()
-        elif nb_population < 10:
+        elif nb_population < 9:
             for pop1_index in range(nb_population):
                 plt.figure()
                 for pop2_index in range(nb_population):
@@ -281,7 +288,6 @@ in the distance matrix. Exiting Now.")
             for population_index, population_name in enumerate(np.unique(label_given)):
                 position_population = np.where(population_name == label_given)
                 color_value = colors[population_index]
-
                 ax.scatter(coordinate.T[p, position_population].ravel(), coordinate.T[q, position_population].ravel(), c=color_value, s=75, alpha = 0.6)
             plt.legend(np.unique(label_given))
             leg = ax.get_legend()
