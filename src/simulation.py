@@ -154,22 +154,34 @@ class SimulationInfo(object):
         if not len(delta) == len(labels_individual):
             sys.exit("Error: The number of individual in the label file is not the same as the number of individual\
 in the distance matrix. Exiting Now.")
-        sorted_labels_individual = np.sort(labels_individual)
         label_pop = self.populations
         sorting_index = np.argsort(labels_individual)
         individual_per_pop = [np.sum(labels_individual == label) for label in np.sort(label_pop)]
         end_position = np.cumsum(individual_per_pop)
         start_position = np.insert(end_position, 0, 0, axis=0)
-        print(start_position)
         delta_reorder = np.copy(delta)
         delta_reorder = delta_reorder[sorting_index, :]
         delta_reorder = delta_reorder[:, sorting_index]
         plt.figure()
         plt.imshow(delta_reorder)
         plt.tick_params(bottom=False, top=True, labeltop=True, labelbottom=False)
-        plt.xticks(start_position, np.sort(label_pop), rotation='horizontal',ha="left")
 
-        plt.yticks(start_position, np.sort(label_pop),rotation="vertical",va="top")
+        for index_position in range(len(start_position)-1):
+            plt.text((start_position[index_position] + start_position[index_position+1])/2, -2,
+                     label_pop[index_position],
+                        verticalalignment = 'bottom',
+                     horizontalalignment='center',
+                     rotation=90
+                     )
+            plt.text(-2,(start_position[index_position] + start_position[index_position+1])/2,
+                     label_pop[index_position],
+                        verticalalignment = 'center',
+                     horizontalalignment='right',
+                     )
+
+        plt.xticks(start_position-1/2,"")
+
+        plt.yticks(start_position-1/2, "")
 
 
 
