@@ -73,10 +73,11 @@ if simulation.pops_contain_at_least_2_individual():
         (distances, effective_size, T) = run_once(boot, simulation)
         if distances is not None:
             simulation.all_distance.append(distances)
-        simulation.all_effective_size.append(effective_size)
-        simulation.all_T.append(T)
+            simulation.all_effective_size.append(effective_size)
+            simulation.all_T.append(T)
 else:
     exit("Error: Unable to perform the time inference.Each population should have more than one individual")
+
 
 simulation.generate_final_output()
 
