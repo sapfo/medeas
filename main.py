@@ -54,11 +54,13 @@ simulation.ns = ns
 
 coordinates_pca = get_mds_coordinate(simulation, 2)
 simulation.plot_mds(coordinates_pca, "PCA_")
-if simulation.topology == None:
-    tree = find_tree(simulation.K, simulation.asd_pattern.format(1), simulation.numerical_labels, coordinates_mds, simulation)
+if simulation.K > 1:
+    if simulation.topology == None:
+        tree = find_tree(simulation.K, simulation.asd_pattern.format(1), simulation.numerical_labels, coordinates_mds, simulation)
+    else:
+        tree = set_tree_from_input(simulation.asd_pattern.format(1), simulation)
 else:
-    tree = set_tree_from_input(simulation.asd_pattern.format(1), simulation)
-
+    exit("Error: Unable to perform tree reconstruction. You should have more than one population")
 simulation.set_tree(tree)
 simulation.save_tree()
 
@@ -66,7 +68,7 @@ simulation.save_tree()
 simulation.all_distance = []
 simulation.all_effective_size = []
 simulation.all_T = []
-if simulation.K > 1 and simulation.pops_contain_at_least_2_individual():
+if simulation.pops_contain_at_least_2_individual():
     for boot in range(-1, simulation.bootstrap_number):
         (distances, effective_size, T) = run_once(boot, simulation)
         if distances is not None:
@@ -74,7 +76,7 @@ if simulation.K > 1 and simulation.pops_contain_at_least_2_individual():
         simulation.all_effective_size.append(effective_size)
         simulation.all_T.append(T)
 else:
-    exit("Error: Unable to perform the time inference. You should have more than one population and each population should have more than one individual.")
+    exit("Error: Unable to perform the time inference.Each population should have more than one individual")
 
 simulation.generate_final_output()
 
