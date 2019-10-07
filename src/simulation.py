@@ -12,7 +12,7 @@ from multiprocessing import cpu_count
 from skbio.tree import nj, TreeNode
 import pickle
 from src.clustering import get_mds_coordinate
-from src.clustering import add_indices
+from src.clustering import build_split_index_matrix
 class SimulationInfo(object):
 
     def __init__(self):
@@ -254,17 +254,17 @@ in the distance matrix. Exiting Now.")
         for leave in self.tree_with_name.tips():
             leave.name = self.populations[int(leave.name)]
         # Defining the name for the population split
-        d_ind = -np.ones((self.K, self.K), dtype='int16')
+        split_index_matrix = -np.ones((self.K, self.K), dtype='int16')
         constraints = []
         constraints_coal_time = []
-        add_indices(tree, d_ind, constraints, constraints_coal_time)
-
+        build_split_index_matrix(tree, split_index_matrix, constraints, constraints_coal_time)
+        self.split_index_matrix = split_index_matrix
         self.split_names = []
         for index_split in range(self.K - 1):
-            for row in d_ind:
+            for row in split_index_matrix:
                 if index_split in row:
                     group_pop_1 = np.where(row == index_split)[0]
-                    group_pop_2 = np.where(index_split == d_ind[group_pop_1[0]])[0]
+                    group_pop_2 = np.where(index_split == split_index_matrix[group_pop_1[0]])[0]
                     self.split_names.append((group_pop_1,group_pop_2))
                     break
 
@@ -285,7 +285,7 @@ in the distance matrix. Exiting Now.")
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, self.K))
 
-        for p in range(0, self.K, 2):
+        for p in range(0, self.K + 2, 2):
         #for p in range(0, len(self.labels)-1, 2):
             q = p + 1
             plt.rcParams.update({'font.size': 22})

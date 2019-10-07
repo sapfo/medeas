@@ -56,7 +56,7 @@ coordinates_pca = get_mds_coordinate(simulation, 2)
 simulation.plot_mds(coordinates_pca, "PCA_")
 if simulation.K > 1:
     if simulation.topology == None:
-        tree = find_tree(simulation.K, simulation.asd_pattern.format(1), simulation.numerical_labels, coordinates_mds, simulation)
+        tree = find_tree(simulation.K, simulation.numerical_labels, coordinates_mds)
     else:
         tree = set_tree_from_input(simulation.asd_pattern.format(1), simulation)
 else:

@@ -18,6 +18,8 @@ OFFSET = 2
 
 
 def get_mds_coordinate(simulation, p):
+    """Compute the MDS coordinate from the eigenvalues and eigenvectore of the
+    MDS matrix"""
     with open(simulation.vec_pattern.format(p), 'rb') as f:
         lambdas, vecs = pickle.load(f)
     N = len(lambdas)
@@ -31,8 +33,7 @@ def get_mds_coordinate(simulation, p):
         else:
             coordinates[i] = 0 * v[1:]
 
-    npop = simulation.K
-    #coordinates = coordinates[:npop + OFFSET]
+
     coordinates = np.array(coordinates)
     coordinates = coordinates.T
     return(coordinates)
@@ -68,35 +69,24 @@ def build_population_dimension(npop: int, numerical_labels):
         ns[i] = len(np.where(numerical_labels == i)[0])
     return(ns)
 
-def find_tree(npop: int, asd_file: str,
-              inferred_labels: 'np.ndarray[int]',
+def find_tree(npop: int,
+              numerical_label: 'np.ndarray[int]',
               arr: 'np.ndarray[float]',
-              simulation,
-              ) -> Tuple[TreeNode, 'np.ndarray[int]', 'np.ndarray[float]']:
+              ) -> TreeNode:
     """Find tree topology using the centers of mass of clusters.
     'inferred_labels' contains assigned labels. Return the neighbor join tree, population sizes,
     and the bloks of original distance matrix that correspond to given
     population pairs (for further determination of fitting window).
     """
-
-    with open(asd_file, 'rb') as f:
-        delta = pickle.load(f)
-    ns = build_population_dimension(npop, inferred_labels)
-    blocks = build_distance_subblock(npop, inferred_labels, delta)
-
-
-
     if npop == 2:
         tree = read(StringIO('(0:0.1, 1:0.1);'), format='newick', into=TreeNode)
         return tree
-    if npop == 1:
-        tree = read(StringIO('();'), format='newick', into=TreeNode)
-        return tree
+
     arr = arr[:, :npop + OFFSET]
     ds = np.zeros((npop, npop))
     coords = np.zeros((npop, npop+OFFSET))
-    for i in set(inferred_labels):
-        coords[i, :] = np.mean(arr[np.where(inferred_labels == i)[0], :], axis=0)
+    for i in set(numerical_label):
+        coords[i, :] = np.mean(arr[np.where(numerical_label == i)[0], :], axis=0)
     for i in range(npop):
         for j in range(npop):
             ds[i, j] = np.sqrt(np.sum((coords[i] - coords[j])**2))
@@ -119,7 +109,7 @@ def set_tree_from_input(asd_file, simulation) -> Tuple[TreeNode, 'np.ndarray[int
     print(tree.ascii_art())
     return tree
 
-def add_indices(tr: TreeNode, d_ind: 'np.ndarray[int]',constraints: List,constraints_coal_time: List, current: int = 0) -> None:
+def build_split_index_matrix(tr: TreeNode, split_index_matrix: 'np.ndarray[int]', constraints: List, constraints_coal_time: List, current: int = 0) -> None:
     """For every pair of populations substitute an index of corresponding split time.
     Append distance constraints that correspond to given tree."""
     left = tr.children[0]
@@ -134,18 +124,18 @@ def add_indices(tr: TreeNode, d_ind: 'np.ndarray[int]',constraints: List,constra
         r_ind = list(map(lambda x: int(x.name), right.tips()))
     for i in l_ind:
         for j in r_ind:
-            d_ind[i, j] = d_ind[j, i] = current
+            split_index_matrix[i, j] = split_index_matrix[j, i] = current
     previous = current
     current += 1
     if not left.is_tip():
         constraints.append((current, previous))
-        add_indices(left, d_ind, constraints,constraints_coal_time, current)
+        build_split_index_matrix(left, split_index_matrix, constraints, constraints_coal_time, current)
         current += 1 + sum([1 for _ in left.non_tips()])
     else:
         constraints_coal_time.append((previous,left.name))
     if not right.is_tip():
         constraints.append((current, previous))
-        add_indices(right, d_ind, constraints,constraints_coal_time, current)
+        build_split_index_matrix(right, split_index_matrix, constraints, constraints_coal_time, current)
     else:
         constraints_coal_time.append((previous, right.name))
 
@@ -156,14 +146,14 @@ def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
                    output_level
                    ) -> Tuple[OptimizeResult, List[Tuple[int, int]]]:
     """Find coalescence times from the tree topology."""
-    d_ind = -np.ones((npop, npop), dtype='int16')
+    split_index_matrix = -np.ones((npop, npop), dtype='int16')
     constraints = []
     constraints_coal_time = []
 
-    add_indices(tree, d_ind, constraints, constraints_coal_time)
+    build_split_index_matrix(tree, split_index_matrix, constraints, constraints_coal_time)
 
     if output_level == 2:
-        print(f"d_ind = {d_ind}")
+        print(f"split_index_matrix = {split_index_matrix}")
         print(f"constraints_coal_time: {constraints_coal_time}")
     def make_tij(ts: List[int]) -> 'np.ndarray[float]':
         """Make distance (split time) matrix from the given vector of
@@ -173,7 +163,7 @@ def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
         for i in range(npop):
             for j in range(npop):
                 if i != j:
-                    tij[i, j] = ts[d_ind[i, j]]
+                    tij[i, j] = ts[split_index_matrix[i, j]]
                 else:
                     tij[i, i] = t_within[i]
         return tij
@@ -204,7 +194,7 @@ def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
     for k in range(npop - 1):
         # From every block of distances find boundaries for fitting,
         # i.e. smallest and largest value.
-        ks = np.where(d_ind == k)
+        ks = np.where(split_index_matrix == k)
         subblocks = blocks[ks]
         means = []
         s_mins = []
