@@ -6,8 +6,8 @@ import matplotlib.lines as mlines
 import subprocess
 import datetime
 import sys
-import copy
-from  colorsys import rgb_to_hsv as hsv
+from multiprocessing import cpu_count
+
 
 from skbio.tree import nj, TreeNode
 import pickle
@@ -45,6 +45,9 @@ class SimulationInfo(object):
         parser.add_argument("--output_level", help="How many information should be printed & saved: 0 -minimal, 1 - conventional, 2 - most of it",
                             type=int, default=1)
 
+        parser.add_argument("--ncpus", help="Number of parallel process to be launch. 0 (default) used all available cores",
+                            type=int, default=0)
+
         args = parser.parse_args()
 
         self.snps_pattern = args.snps_file
@@ -61,7 +64,9 @@ class SimulationInfo(object):
         self.skip_calculate_matrix = args.skip_calculate_matrix
         self.bootstrap_number = args.bootstrap_number
         self.output_level = args.output_level
-
+        self.NCORE = args.ncpus
+        if self.NCORE == 0:
+            self.NCORE = cpu_count()
         self.topology = args.topology
 
         self.output_folder = args.output_folder

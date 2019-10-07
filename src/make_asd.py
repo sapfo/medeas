@@ -7,14 +7,14 @@ Created on Fri Jun 24 15:29:37 2016
 
 import sys
 import numpy as np
-from multiprocessing import Process, Queue, cpu_count
+from multiprocessing import Process, Queue
 from typing import Tuple, Callable, List, IO
 import pickle
 from random import randint
 import matplotlib.pyplot as plt
 
 
-NPROC = cpu_count()
+
 
 
 def dist_and_norm(a: 'np.ndarray[int]', b: 'np.ndarray[int]',
@@ -58,13 +58,12 @@ def work(tasks: 'Queue[int]',
 
 def process(data: 'np.ndarray[int]',
             dist_func: Callable[[np.ndarray], np.ndarray],
-            tasks, results, N) -> Tuple['np.ndarray[float]', 'np.ndarray[int]']:
+            tasks, results, N, NPROC) -> Tuple['np.ndarray[float]', 'np.ndarray[int]']:
     """Calculate matrices of un-normalized distances and norms for 'data'
     using given distance function.
     """
     dists = np.zeros((N, N))
     norms = np.zeros((N, N))
-
     for i in range(N):
         tasks.put(i)
     for _ in range(NPROC):
@@ -129,7 +128,6 @@ def  compute_asd_matrix(simulation) -> None:
     f: IO
     chunk_data: List[Tuple['np.ndarray[float]', 'np.ndarray[float]']] = []
     remainder = None  # np.zeros((1, N))
-
     def process_chunks(data) -> None:
         nonlocal remainder, tot_dists, tot_norms
         start_i = 0
@@ -141,7 +139,8 @@ def  compute_asd_matrix(simulation) -> None:
             if remainder is not None and start_i == 0:
                 chunk = np.vstack((remainder, chunk))
             datac = chunk.T.copy()
-            dists, norms = process(datac, dist_func, tasks, results, N)
+
+            dists, norms = process(datac, dist_func, tasks, results, N, simulation.NCORE)
             tot_dists += dists
             tot_norms += norms
             chunk_data.append((dists, norms))
@@ -229,12 +228,3 @@ def  compute_asd_matrix(simulation) -> None:
     print('Distance matrix computed')
     simulation.plot_distance_matrix(delta)
 
-
-
-
-if __name__ == '__main__':
-    pp = int(sys.argv[2])
-    name = sys.argv[1]  # C:\Users\levkivskyi\PycharmProjects\medeas\test\...
-    out_name = f'out.pp.{pp}.asd'
-
-    compute_asd_matrix(pp, name, out_name)
