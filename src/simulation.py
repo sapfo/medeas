@@ -173,13 +173,13 @@ in the distance matrix. Exiting Now.")
 
         for index_position in range(len(start_position)-1):
             plt.text((start_position[index_position] + start_position[index_position+1])/2, -2,
-                     label_pop[index_position],
+                     np.sort(label_pop)[index_position],
                         verticalalignment = 'bottom',
                      horizontalalignment='center',
                      rotation=90
                      )
             plt.text(-2,(start_position[index_position] + start_position[index_position+1])/2,
-                     label_pop[index_position],
+                     np.sort(label_pop)[index_position],
                         verticalalignment = 'center',
                      horizontalalignment='right',
                      )
