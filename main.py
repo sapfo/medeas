@@ -67,26 +67,30 @@ simulation.set_tree(tree)
 simulation.save_tree()
 
 
-simulation.all_distance = []
-simulation.all_effective_size = []
+simulation.all_between_pop_coalescence_time = []
+simulation.all_within_pop_coalescence_time = []
 simulation.all_T = []
 if simulation.pops_contain_at_least_2_individual():
     for boot in range(-1, simulation.bootstrap_number):
         (distances, effective_size, T) = run_once(boot, simulation)
         if distances is not None:
-            simulation.all_distance.append(distances)
-            simulation.all_effective_size.append(effective_size)
+            simulation.all_between_pop_coalescence_time.append(distances)
+            simulation.all_within_pop_coalescence_time.append(effective_size)
             simulation.all_T.append(T)
 else:
     exit("Error: Unable to perform the time inference.Each population should have more than one individual")
 
+simulation.all_split_time = []
+simulation.all_effective_size = []
 
-
-for effective_sizes, distances in zip(simulation.all_effective_size, simulation.all_distance):
-    extrapolate_split_time(simulation.tree,
-                           simulation.split_index_matrix,
-                            effective_sizes,
-                           distances)
+for within_pop_coalescence_time, between_pop_coalescence_time in zip(simulation.all_within_pop_coalescence_time,
+                                                                     simulation.all_between_pop_coalescence_time):
+    effective_sizes, split_times = extrapolate_split_time(simulation.tree,
+                                                          simulation.split_index_matrix,
+                                                          within_pop_coalescence_time,
+                                                          between_pop_coalescence_time)
+    simulation.all_effective_size.append(effective_sizes)
+    simulation.all_split_time.append(split_times)
 
 
 simulation.generate_final_output()

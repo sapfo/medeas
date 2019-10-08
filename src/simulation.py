@@ -338,8 +338,6 @@ in the distance matrix. Exiting Now.")
 
     def generate_final_output(self):
         print("generating final output")
-        print(self.output_folder)
-        print(self.all_distance)
         with open(os.path.join(self.output_folder, "between_population_coalescence_time.txt"), 'w') as f:
             for split_name in self.split_names:
                 f.write("-".join(self.populations[split_name[0]]))
@@ -347,7 +345,7 @@ in the distance matrix. Exiting Now.")
                 f.write("-".join(self.populations[split_name[1]]))
                 f.write("\t")
             f.write("\n")
-            for distances in self.all_distance:
+            for distances in self.all_between_pop_coalescence_time:
                 for distance in distances:
                     f.write(str(distance) + "\t")
                 f.write("\n")
@@ -355,10 +353,32 @@ in the distance matrix. Exiting Now.")
             for population in self.populations:
                 f.write(population + "\t")
             f.write("\n")
+            for effective_sizes in self.all_within_pop_coalescence_time:
+                for effective_size in effective_sizes:
+                    f.write(str(effective_size) + "\t")
+                f.write("\n")
+        with open(os.path.join(self.output_folder, "split_time.txt"), 'w') as f:
+            for split_name in self.split_names:
+                f.write("-".join(self.populations[split_name[0]]))
+                f.write("/")
+                f.write("-".join(self.populations[split_name[1]]))
+                f.write("\t")
+            f.write("\n")
+            for distances in self.all_split_time:
+                for distance in distances:
+                    f.write(str(distance) + "\t")
+                f.write("\n")
+        with open(os.path.join(self.output_folder, "effective_size.txt"), 'w') as f:
+            for population in self.populations:
+                f.write(population + "\t")
+            f.write("\n")
             for effective_sizes in self.all_effective_size:
                 for effective_size in effective_sizes:
                     f.write(str(effective_size) + "\t")
                 f.write("\n")
+
+
+
         with open(os.path.join(self.output_folder, "all_T.txt"), 'w') as f:
             for T in self.all_T:
                     f.write(str(T)+"\n")

@@ -23,16 +23,17 @@ def compute_coalescence_time(ts: 'np.array',ns: 'np.array')->'float':
     return coalescence_time
 
 
-
-
-
 def extrapolate_split_time(tree,
                            index_split_matrix,
                            all_coalescence_time_within,
                            all_coalescece_time_between
                            ):
+    all_split_time = np.full(len(all_coalescece_time_between),0.)
+    all_effective_size = np.full(len(all_coalescence_time_within), np.max(all_coalescence_time_within))
+
     Ds_above = np.array([])
     Ns_above = np.array([np.max(all_coalescence_time_within)])
+
     def set_sub_tree(tree, Ds_above, Ns_above):
         """Compute the effective size and the split time of a given split and all his sup split given the past history
          defined by the previous change in population size"""
@@ -70,6 +71,7 @@ def extrapolate_split_time(tree,
         all_largest_id = [largest_left_id, largest_right_id]
         all_largest_value = [largest_left_value, largest_right_value]
         which_largest_value = np.argmax([all_largest_value])
+        smallest_id = all_largest_id[1-which_largest_value]
         tlargelarge = all_largest_value[which_largest_value]
         tsmallsmall = all_largest_value[1 - which_largest_value]
         tlargesmall = all_coalescece_time_between[index_split_matrix[largest_left_id, largest_right_id]]
@@ -82,7 +84,10 @@ def extrapolate_split_time(tree,
             return np.real(putative_ts - real_ts)
 
         res = least_squares(dev, (tlargesmall - tlargelarge, Ns_above[0]), gtol=1.e-15)
-        print(f"Pop: {largest_right_id} and {largest_left_id} at {res.x}")
+
+        all_split_time[index_split_matrix[largest_left_id, largest_right_id]] = res.x[0]
+        all_effective_size[smallest_id] = res.x[1]
+
         set_sub_tree(all_tree[which_largest_value],
                      Ds_above,
                      Ns_above)
@@ -92,3 +97,4 @@ def extrapolate_split_time(tree,
     set_sub_tree(tree,
                  Ds_above,
                  Ns_above)
+    return((all_effective_size, all_split_time))
