@@ -16,10 +16,12 @@ from src.simulation import SimulationInfo
 import pickle
 from src.make_asd import compute_asd_matrix
 from src.mds import calc_mds
-from src.lambda_analyze import find_T_and_t_within
+
 from single_pass import run_once
-from src.clustering import perform_clustering, find_tree, get_mds_coordinate, set_tree_from_input, build_population_dimension
+from src.clustering import find_tree, get_mds_coordinate, set_tree_from_input, build_population_dimension
 import sys
+from src.extrapolate_split_time import extrapolate_split_time
+
 simulation = SimulationInfo()
 if not simulation.skip_calculate_matrix:
     try:
@@ -77,6 +79,14 @@ if simulation.pops_contain_at_least_2_individual():
             simulation.all_T.append(T)
 else:
     exit("Error: Unable to perform the time inference.Each population should have more than one individual")
+
+
+
+for effective_sizes, distances in zip(simulation.all_effective_size, simulation.all_distance):
+    extrapolate_split_time(simulation.tree,
+                           simulation.split_index_matrix,
+                            effective_sizes,
+                           distances)
 
 
 simulation.generate_final_output()
