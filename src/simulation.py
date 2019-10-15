@@ -338,7 +338,7 @@ in the distance matrix. Exiting Now.")
 
 
     def get_bootstraped_value(self, all_value):
-        all_value = -np.sort(-np.array(all_value))
+        all_value = np.sort(np.array(all_value))
         nb_element = len(all_value)
         upper_index = int(0.975*nb_element)
         lower_index = int(0.025*nb_element)
