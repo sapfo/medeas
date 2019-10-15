@@ -336,48 +336,99 @@ in the distance matrix. Exiting Now.")
                 f.write(f'{arg}: {getattr(args, arg)} \n')
             f.write("\n" + "".join(100 * ["*"]) + "\n \n")
 
-    def generate_final_output(self):
-        print("generating final output")
+
+    def get_bootstraped_value(self, all_value):
+        all_value = -np.sort(-np.array(all_value))
+        nb_element = len(all_value)
+        upper_index = int(0.975*nb_element)
+        lower_index = int(0.025*nb_element)
+        median_index = int(0.5*nb_element)
+        return((all_value[median_index],all_value[lower_index],all_value[upper_index]))
+
+    def get_bootstraped_value_matrix(self,matrix_to_bootstrap):
+        all_bootstraped_value = []
+        for column in matrix_to_bootstrap:
+            all_bootstraped_value.append(self.get_bootstraped_value(column))
+        return all_bootstraped_value
+
+    def write_single_split(self, split_name, file):
+        file.write("(")
+        file.write("-".join(self.populations[split_name[0]]))
+        file.write(")/(")
+        file.write("-".join(self.populations[split_name[1]]))
+        file.write(")")
+
+
+    def write_header_split(self, file):
+        for split_name in self.split_names:
+            self.write_single_split(split_name, file)
+            file.write("\t")
+        file.write("\n")
+
+    def write_header_pop(self, file):
+        for population in self.populations:
+            file.write(population + "\t")
+        file.write("\n")
+
+
+    def write_raw_computed_value(self):
         with open(os.path.join(self.output_folder, "between_population_coalescence_time.txt"), 'w') as f:
-            for split_name in self.split_names:
-                f.write("-".join(self.populations[split_name[0]]))
-                f.write("/")
-                f.write("-".join(self.populations[split_name[1]]))
-                f.write("\t")
-            f.write("\n")
+            self.write_header_split(f)
             for distances in self.all_between_pop_coalescence_time:
                 for distance in distances:
-                    f.write(str(distance) + "\t")
+                    f.write(f"{distance:.5f} \t")
                 f.write("\n")
         with open(os.path.join(self.output_folder, "within_population_coalescence_time.txt"), 'w') as f:
-            for population in self.populations:
-                f.write(population + "\t")
-            f.write("\n")
+            self.write_header_pop(f)
             for effective_sizes in self.all_within_pop_coalescence_time:
                 for effective_size in effective_sizes:
-                    f.write(str(effective_size) + "\t")
+                    f.write(f"{effective_size:.5f} \t")
                 f.write("\n")
         with open(os.path.join(self.output_folder, "split_time.txt"), 'w') as f:
-            for split_name in self.split_names:
-                f.write("-".join(self.populations[split_name[0]]))
-                f.write("/")
-                f.write("-".join(self.populations[split_name[1]]))
-                f.write("\t")
-            f.write("\n")
+            self.write_header_split(f)
             for distances in self.all_split_time:
                 for distance in distances:
-                    f.write(str(distance) + "\t")
+                    f.write(f"{distance:.5f} \t")
                 f.write("\n")
         with open(os.path.join(self.output_folder, "effective_size.txt"), 'w') as f:
-            for population in self.populations:
-                f.write(population + "\t")
-            f.write("\n")
+            self.write_header_pop(f)
             for effective_sizes in self.all_effective_size:
                 for effective_size in effective_sizes:
-                    f.write(str(effective_size) + "\t")
+                    f.write(f"{effective_size:.5f} \t")
                 f.write("\n")
 
+    def write_boostraped_value(self):
+        with open(os.path.join(self.output_folder, "split_bootstraped_confidence_interval.txt"), 'w') as f:
+            f.write("node\t Coalescence time 50% [2.5%, 97.5%] \t split time 50% [2.5%, 97.5%] \n")
+            all_bootstraped_coalescence = self.get_bootstraped_value_matrix(list(zip(*self.all_between_pop_coalescence_time)))
+            all_bootstraped_split = self.get_bootstraped_value_matrix(list(zip(*self.all_split_time)))
+            for coalescence_time, split_time, split_name in zip(all_bootstraped_coalescence,
+                                         all_bootstraped_split,
+                                         self.split_names
+                                         ):
+                self.write_single_split(split_name, f)
+                f.write(f"\t {coalescence_time[0]:.5f} [{coalescence_time[1]:.5f},{coalescence_time[2]:.5f}] ")
+                f.write(f"\t {split_time[0]:.5f} [{split_time[1]:.5f},{split_time[2]:.5f}] ")
+                f.write("\n")
 
+        with open(os.path.join(self.output_folder, "population_bootstraped_confidence_interval.txt"), 'w') as f:
+            f.write("node\t Coalescence time 50% [2.5%, 97.5%] \t Effective size after split 50% [2.5%, 97.5%] \n")
+            all_bootstraped_coalescence = self.get_bootstraped_value_matrix(list(zip(*self.all_within_pop_coalescence_time)))
+            all_bootstraped_effective_size = self.get_bootstraped_value_matrix(list(zip(*self.all_effective_size)))
+            for coalescence_time, effective_size, population_name in zip(all_bootstraped_coalescence,
+                                         all_bootstraped_effective_size,
+                                         self.populations
+                                         ):
+                f.write(population_name)
+                f.write(f"\t {coalescence_time[0]:.5f} [{coalescence_time[1]:.5f},{coalescence_time[2]:.5f}] ")
+                f.write(f"\t {effective_size[0]:.5f} [{effective_size[1]:.5f},{effective_size[2]:.5f}] ")
+                f.write("\n")
+
+    def generate_final_output(self):
+
+        print("generating final output")
+        self.write_raw_computed_value()
+        self.write_boostraped_value()
 
         with open(os.path.join(self.output_folder, "all_T.txt"), 'w') as f:
             for T in self.all_T:

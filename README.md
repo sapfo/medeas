@@ -44,9 +44,14 @@ python main.py -sf test/snp.dat -lf test/pop_label.dat -of test
 
 ## Output
 Medeas will generate a folder containing various information. Here is a list of the output files:
-- `mds_plot`: folder containing MDS and PCA plots of the first K+2 dimension (where K is the number of populations contained in the label file).
-- `between_population_coalescence_time.txt`: file giving the coalescence time between each groups of population
-- `within_population_coalescence_time.txt`: file giving the coalescence time within population. Notice that by definition (see publication) the coalescence time in the first population is 1. 
+- `mds_plot`: folder containing MDS and PCA plots of the first K+2 dimension (where K is the number of populations contained in the label file)
+- `between_population_coalescence_time.txt`: file giving the coalescence time between each groups of population (all bootstrap values)
+- `within_population_coalescence_time.txt`: file giving the coalescence time within population. Notice that by definition (see publication) the coalescence time in the first population is 1 (all bootstrap value)
+- `effective_size.txt`: file giving the effective size of each population after splitting for the main branch (all bootstrap value)
+- `split_time.txt`: file giving the split time for each split (all bootstrap value)
+- `population_bootstraped_confidence_interval.txt`: file giving the confidence interval for the within population coalescence time as well as the effective size after splitting from the main branch. 
+- `split_bootstraped_confidence_interval.txt`: file giving the confidence interval for the between population coalescence time as well as the split time
+ 
 - `tree.txt`: file showing the inferred tree.
 - `SFS.pdf`:  file showing the folded SFS of the entire panel. 
 - `eigenvalues.pdf`: plot showing the eigenvalues of the MDS. It shows both, the eigenvalues (upper panel) and the bulk eigenvalues (lower panel)
