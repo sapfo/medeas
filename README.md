@@ -16,7 +16,7 @@ Medeas requires two input files:
 - A matrix of genotypes
 - A file indicating the population of each individual
 
-For now, the method works only on haploid individual. Our recommendation to apply this method on diploid individuals is to consider the two sets of chromosomes independently. 
+For now, the method works only on haploid individuals. Our recommendation is use this method on diploid individuals by considering the two sets of chromosomes independently. 
 ### Genotypes matrix format
 The genotypes matrix is a text file, where each column is one haploid individual and each row is a position in the genome. No header nor row names should appear. Reference allele should be encoded as 1 and alternative allele as 2. Missing data are encoded with 0. 
 ### Label file format
