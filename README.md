@@ -1,6 +1,6 @@
 # Documentation of Medeas
 ## General idea
-Medeas is a python software software that allows to infer coalescence time between individuals within and between populations. It also reconstructs the population tree, but requires labeled individuals, i.e. the populations to which individuals belong to need to be specified.
+Medeas is a python software that allows to infer coalescence time between individuals within and between populations. It also reconstructs the population tree, but requires labeled individuals, i.e. the populations to which individuals belong to need to be specified.
 
 The goal is achieved by computing a multi-dimensional scaling (MDS) projection in a K-dimensional space and then inferring coalescence times from the eigenvalues of the MDS. The population tree is inferred using the center of mass of the various clusters in the MDS projection. 
 
