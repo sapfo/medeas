@@ -116,7 +116,7 @@ class SimulationInfo(object):
             plt.bar(self.sfs[0]/max_freq, self.sfs[1],  width=0.5/max_freq)
         plt.xlabel("Mutation Frequency")
         plt.ylabel("Site count")
-        plt.suptitle("Site frequency spectrum")
+        plt.suptitle("Overall site frequency spectrum")
 
         filePath = os.path.join(self.output_folder, "SFS.pdf")
         plt.savefig(filePath)
