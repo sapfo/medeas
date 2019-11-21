@@ -14,7 +14,17 @@ from random import randint
 import matplotlib.pyplot as plt
 
 
-
+def compute_pre_sfs(data: 'np.ndarray[int]'):
+    L, N = data.shape
+    nb_mut = np.sum(data == 1, axis=1)
+    nb_missing = np.sum(data == 0, axis=1)
+    nb_mut[np.where((N - nb_missing) == 0)] = 0  ## removing in a stupid way site with no data at all
+    nb_missing[np.where((N - nb_missing) == 0)] = 1  ## removing in a stupid way site with no data at all
+    freq = nb_mut / (N - nb_missing)
+    nb_other_mut = np.random.binomial(nb_missing, freq, len(nb_mut))
+    nb_mut = nb_mut + nb_other_mut
+    nb_mut[nb_mut > N / 2] = N - nb_mut[nb_mut > N / 2]  # Folding the SFS, since 0 and 1 are likely to be not  defined
+    return nb_mut
 
 
 def dist_and_norm(a: 'np.ndarray[int]', b: 'np.ndarray[int]',
@@ -148,7 +158,8 @@ def  compute_asd_matrix(simulation) -> None:
             end_i = start_i + bootsize
         remainder = data[start_i:]
 
-    pre_sfs = np.empty((0))
+    pre_sfs = np.empty((0),dtype=int)
+    allele_count_per_pop = np.empty((0,simulation.K),dtype=int)
     with open(name) as f:
         while True:
             data_lines = f.readlines(MAXSIZE)
@@ -161,17 +172,19 @@ def  compute_asd_matrix(simulation) -> None:
             # data = data[:, ::2] + data[:, 1::2]
             print('Chunk loaded')
 
-            nb_mut = np.sum(data==1,axis=1)
-            nb_missing = np.sum(data==0,axis=1)
-            nb_mut[np.where((N - nb_missing)==0)] = 0 ## removing in a stupid way site with no data at all
-            nb_missing[np.where((N - nb_missing)==0)] = 1 ## removing in a stupid way site with no data at all
-            freq = nb_mut/(N - nb_missing)
-            nb_other_mut = np.random.binomial(nb_missing,freq,len(nb_mut))
-            nb_mut = nb_mut + nb_other_mut
-            nb_mut[nb_mut > N/2] = N - nb_mut[nb_mut > N/2] # Folding the SFS, since 0 and 1 are likely to be not well defined
+            nb_mut = compute_pre_sfs(data)
             pre_sfs = np.append(pre_sfs, nb_mut)
+            pos_start = 0
+            temp_pre_join_sfs = []
+            for population_label in simulation.populations:
+                population_position = (simulation.labels == population_label)
+                temp_pre_join_sfs.append(compute_pre_sfs(data[:,population_position]))
+            temp_pre_join_sfs = np.transpose(temp_pre_join_sfs)
+            allele_count_per_pop = np.vstack((allele_count_per_pop, temp_pre_join_sfs))
             process_chunks(data)
     sfs = np.unique(pre_sfs, return_counts = True)
+    simulation.join_sfs = np.unique(allele_count_per_pop, axis=0, return_counts=True)
+
     simulation.sfs = np.array(sfs)
 
 

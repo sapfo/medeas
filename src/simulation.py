@@ -123,6 +123,8 @@ class SimulationInfo(object):
         plt.close()
         with open(os.path.join(self.output_folder, "SFS.txt"), 'w') as f:
             np.savetxt(f, np.transpose(self.sfs).astype(int),fmt='%i')
+        with open(os.path.join(self.output_folder, "join_sfs.dat"),"wb") as f:
+            pickle.dump(self.join_sfs, f)
 
     def plot_eigenvalues(self):
         with open(self.vec_pattern.format(2), 'rb') as f:
@@ -285,7 +287,7 @@ in the distance matrix. Exiting Now.")
             cmap = plt.get_cmap('jet')
             colors = cmap(np.linspace(0, 1.0, self.K))
 
-        for p in range(0, self.K + 2, 2):
+        for p in range(0, self.K, 2):
         #for p in range(0, len(self.labels)-1, 2):
             q = p + 1
             plt.rcParams.update({'font.size': 22})

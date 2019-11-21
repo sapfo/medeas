@@ -5,7 +5,7 @@ Created on Thu Sep 20 15:29:37 2018
 @author: Frederic
 """
 import pickle
-from src.clustering import find_distances, validate_dists, build_distance_subblock
+from src.clustering import find_t_between, validate_coalescence_time, build_distance_subblock
 from src.lambda_analyze import find_T_and_t_within
 
 def run_once(boot: int, simulation):
@@ -24,18 +24,18 @@ def run_once(boot: int, simulation):
     while not distance_validity:
         if nbLoop == maxNbLoop: break
         nbLoop = nbLoop + 1
-        dists, constraints_D, constraints_ts = find_distances(simulation.K, T,t_within, simulation.tree, simulation.ns, lambdas,
-                                            distance_subblocks, simulation.output_level)
-        distance_validity = validate_dists(dists.x, t_within, constraints_D, constraints_ts)
+        t_between, constraints_D, constraints_ts = find_t_between(simulation.K, T, t_within, simulation.tree, simulation.ns, lambdas,
+                                                              distance_subblocks, simulation.output_level)
+        distance_validity = validate_coalescence_time(t_between, t_within, constraints_D, constraints_ts)
         if simulation.output_level >= 1:
-            print('Found distances:', dists.x)
+            print('Found distances:', t_between)
             if distance_validity:
                 print('Valid distance')
             else:
                 print('Invalid distance')
 
     else:
-        return(dists.x,t_within, T)
+        return(t_between,t_within, T)
 
     print('Unable to find valid distances for this bootstrap replicate')
     return(None,t_within, T)

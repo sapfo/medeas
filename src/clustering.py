@@ -139,13 +139,14 @@ def build_split_index_matrix(tr: TreeNode, split_index_matrix: 'np.ndarray[int]'
     else:
         constraints_coal_time.append((previous, right.name))
 
-def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
+def find_t_between(npop: int, T: float, t_within: 'np.ndarray[float]',
                    tree: TreeNode, ns: 'np.ndarray[int]',
                    lambdas: 'np.ndarray[float]',
                    blocks: 'np.ndarray[np.ndarray[float]]',
                    output_level
                    ) -> Tuple[OptimizeResult, List[Tuple[int, int]]]:
-    """Find coalescence times from the tree topology."""
+    """Find coalescence times from the tree topology, eigenvalues and
+    coalescence time within population."""
     split_index_matrix = -np.ones((npop, npop), dtype='int16')
     constraints = []
     constraints_coal_time = []
@@ -249,14 +250,14 @@ def find_distances(npop: int, T: float, t_within: 'np.ndarray[float]',
         print(f"{25*'-'} \n b = \n {b}")
         print(f"{100*'-'}")
 
-    return res, constraints, constraints_coal_time
+    return res.x, constraints, constraints_coal_time
 
 
-def validate_dists(dists: 'np.ndarray[float]',
-                   ts: 'np.ndarray[float]',
-                   constraints: List[Tuple[int, int]],
-                   constraints_coal: List[Tuple[int, str]]
-                   ) -> bool:
+def validate_coalescence_time(dists: 'np.ndarray[float]',
+                              ts: 'np.ndarray[float]',
+                              constraints: List[Tuple[int, int]],
+                              constraints_coal: List[Tuple[int, str]]
+                              ) -> bool:
     """Verify if the given split times satisfy the 'constrains' obtained from
     the tree topology.
     """
