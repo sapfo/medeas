@@ -56,7 +56,7 @@ Medeas will generate a folder containing various information. Here is a list of 
 - `SFS.pdf`:  file showing the folded SFS of the entire panel. 
 - `eigenvalues.pdf`: plot showing the eigenvalues of the MDS. It shows both, the eigenvalues (upper panel) and the bulk eigenvalues (lower panel)
 - `histogram_eigenvalues.pdf`: A histogram of the bulk eigenvalues
-- `Time_per_pop.pdf` and `time_*.pdf`: Several plot showing the histogram of the pairwise distance of individual between and within populations. 
+- `Time_per_pop.pdf` and `time_*.pdf` or `all_pop.pdf`: Several plot showing the histogram of the pairwise distance of individual between and within populations. If K <= 3 (K = number of population), all the pairwise distance are depicted in  `all_pop.pdf`. If K > 3, separeted file `time_popName.pdf` for each population are created for a better readability. 
 - `plot_distance.pdf`: A graphical representation of the distance matrix
 - `(MDS|PCA)_coordinate.txt`: The actual coordinate of the MDS and PCA plot. If the user wants to redo the plot with a different layout. 
 - `asd_matrices` and `MDS_eigensystem`: Folders used for internal storage. They are kept and are useful if the user wants to repeat the same calculation using the option --skip-calculate-matrix but can be deleted otherwise. 
