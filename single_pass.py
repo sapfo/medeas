@@ -8,7 +8,9 @@ import pickle
 from src.clustering import find_distances, validate_dists, build_distance_subblock
 from src.lambda_analyze import find_T_and_t_within
 
-def run_once(boot: int, simulation) -> None:
+def run_once(boot: int, simulation):
+    """ This function take as an input the index of a bootstrap,
+    load the related distance matrix and infer the coalescence times"""
     suffix = f'.boot.{boot}' if boot > -1 else ''
     with open(simulation.vec_pattern.format(1) + suffix, 'rb') as f:
         lambdas, vec = pickle.load(f)
@@ -28,12 +30,12 @@ def run_once(boot: int, simulation) -> None:
         if simulation.output_level >= 1:
             print('Found distances:', dists.x)
             if distance_validity:
-                print('Valide distance')
+                print('Valid distance')
             else:
                 print('Invalid distance')
 
     else:
         return(dists.x,t_within, T)
 
-    print('Unable to find valid distances for this bootstrap sample')
+    print('Unable to find valid distances for this bootstrap replicate')
     return(None,t_within, T)

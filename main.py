@@ -22,6 +22,7 @@ from src.clustering import find_tree, get_mds_coordinate, set_tree_from_input, b
 import sys
 from src.extrapolate_split_time import extrapolate_split_time
 
+#Reading input and creating an object to access the parameters
 simulation = SimulationInfo()
 if not simulation.skip_calculate_matrix:
     try:
@@ -30,6 +31,7 @@ if not simulation.skip_calculate_matrix:
         sys.exit("Error: A problem occurs when computing the distance matrix. Please check that your genotype matrix is in the right format.")
     simulation.export_sfs()
 
+#Loading delta the distance matrix for p = 1
 with open(simulation.asd_pattern.format(1), 'rb') as f:
      delta = pickle.load(f)
 
@@ -39,11 +41,14 @@ simulation.plot_distance_matrix(delta)
 
 if simulation.output_level > 1:
     print(f"number of individual in the distance matrix: {len(delta)}")
+
+#Compute mds for p = 1 and for p = 2 with all data
 calc_mds(simulation.asd_pattern.format(1), simulation.vec_pattern.format(1))
 
 calc_mds(simulation.asd_pattern.format(2), simulation.vec_pattern.format(2))
 simulation.plot_eigenvalues()
 
+#Compute mds for p = 1 and for p = 2 for all bootstrap replicate
 for boot in range(simulation.bootstrap_number):
     suffix = f'.boot.{boot}'
     calc_mds(simulation.asd_pattern.format(1) + suffix, simulation.vec_pattern.format(1) + suffix)
@@ -51,11 +56,14 @@ for boot in range(simulation.bootstrap_number):
 
 coordinates_mds = get_mds_coordinate(simulation, 1)
 simulation.plot_mds(coordinates_mds,"MDS_")
+#ns is the vector of population sample sizes
 ns = build_population_dimension(simulation.K,simulation.numerical_labels)
 simulation.ns = ns
 
 coordinates_pca = get_mds_coordinate(simulation, 2)
 simulation.plot_mds(coordinates_pca, "PCA_")
+
+
 if simulation.K > 1:
     if simulation.topology == None:
         tree = find_tree(simulation.K, simulation.numerical_labels, coordinates_mds)
@@ -94,4 +102,3 @@ for within_pop_coalescence_time, between_pop_coalescence_time in zip(simulation.
 
 
 simulation.generate_final_output()
-
