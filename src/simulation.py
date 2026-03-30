@@ -1,4 +1,5 @@
 import argparse
+import copy
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -250,7 +251,7 @@ in the distance matrix. Exiting Now.")
 
     def set_tree(self, tree: 'skbio.tree'):
         self.tree = tree
-        self.tree_with_name = tree.deepcopy()
+        self.tree_with_name = copy.deepcopy(tree)
         for leave in self.tree_with_name.tips():
             leave.name = self.populations[int(leave.name)]
         # Defining the name for the population split
@@ -296,7 +297,7 @@ in the distance matrix. Exiting Now.")
                 ax.scatter(coordinate.T[p, position_population].ravel(), coordinate.T[q, position_population].ravel(), c=color_value, s=75, alpha = 0.6)
             plt.legend(np.unique(label_given))
             leg = ax.get_legend()
-            for point in leg.legendHandles:
+            for point in leg.legend_handles:
                 point.set_color('black')
             dir_plot = os.path.join(self.output_folder, "mds_plot")
             if not os.path.isdir(dir_plot):
