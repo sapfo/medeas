@@ -16,6 +16,20 @@ Medeas requires two input files:
 - A matrix of genotypes
 - A file indicating the population of each individual
 
+### Install As A Package
+
+From the repository root:
+
+```bash
+pip install .
+```
+
+After installation, Medeas can be launched with the command:
+
+```bash
+medeas -sf <genotypes_file> -lf <labels_file> -of <output_folder>
+```
+
 For now, the method works only on haploid individuals. Our recommendation is use this method on diploid individuals by considering the two sets of chromosomes independently. 
 ### Genotypes matrix format
 The genotypes matrix is a text file, where each column is one haploid individual and each row is a position in the genome. No header nor row names should appear. Reference allele should be encoded as 1 and alternative allele as 2. Missing data are encoded with 0. 
@@ -32,6 +46,12 @@ Three arguments are mandatory to launch Medeas:
 An example genotypes matrix and a label file are given in the test directory ( [test/snp.dat](test/snp.dat) and  [test/pop_label.dat](test/pop_label.dat), respectively). Using them, we can launch Medeas using: 
 ```
 python main.py -sf test/snp.dat -lf test/pop_label.dat -of test
+```
+
+Equivalent package command:
+
+```
+medeas -sf test/snp.dat -lf test/pop_label.dat -of test
 ```
 ### Optional parameters:
 - `-bws`: The number of SNPs to include in a bootstrapping window. Notice that the largest this number is, the faster it is, but if it’s too big, the bootstrapping intervals become less reliable. Our recommendation is to use about 1% of the SNPs. 

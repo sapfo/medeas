@@ -17,7 +17,20 @@ def compute_coalescence_time(ts: 'np.array',ns: 'np.array')->'float':
         new_prob = (1-probability_previous)*probability_unnormalized[index_n]
         probability[index_n] = new_prob
 
-    all_contribution = (ts[:-1] + ns + delta_ts/(1-np.exp(delta_ts/ns)))*probability
+    # Stable evaluation of delta_ts / (1 - exp(delta_ts / ns)).
+    # The last interval uses +inf and is handled separately below.
+    with np.errstate(over='ignore', invalid='ignore', divide='ignore'):
+        den = 1 - np.exp(delta_ts / ns)
+
+    ratio = np.zeros_like(delta_ts, dtype=float)
+    valid = np.isfinite(delta_ts) & np.isfinite(den) & (np.abs(den) > 1e-12)
+    ratio[valid] = delta_ts[valid] / den[valid]
+
+    # Limit for delta_ts -> 0: delta_ts / (1 - exp(delta_ts/ns)) -> -ns
+    near_zero = np.isfinite(delta_ts) & (np.abs(den) <= 1e-12)
+    ratio[near_zero] = -ns[near_zero]
+
+    all_contribution = (ts[:-1] + ns + ratio) * probability
     all_contribution[-1] = (ts[-2] + ns[-1])*probability[-1]
     coalescence_time = np.sum(all_contribution)
     return coalescence_time

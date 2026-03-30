@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "medeas"
+version = "0.1.0"
+description = "Medeas: inference of coalescence times and population splits from ASD/MDS"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Ivan Levkivskyi, Frederic Michaud, Anna-Sapfo Malaspinas" }
+]
+dependencies = [
+  "numpy",
+  "matplotlib",
+  "scikit-learn",
+  "scikit-bio",
+  "scipy"
+]
+
+[project.scripts]
+medeas = "main:main"
+
+[tool.setuptools]
+include-package-data = true
+py-modules = ["main", "single_pass"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+exclude = ["test*", "script*"]
