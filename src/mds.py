@@ -6,6 +6,7 @@ def calc_mds(file: str, outfile: str) -> None:
     """Read distance matrix from 'file', calculate the eigensystem,
     and store it into 'outfile'.
     """
+
     with open(file, 'rb') as f:
          delta = pickle.load(f)
 
