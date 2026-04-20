@@ -18,7 +18,7 @@ OFFSET = 2
 
 
 def get_mds_coordinate(simulation, p):
-    """Compute the MDS coordinate from the eigenvalues and eigenvectore of the
+    """Compute the MDS coordinate from the eigenvalues and eigenvectors of the
     MDS matrix"""
     with open(simulation.vec_pattern.format(p), 'rb') as f:
         lambdas, vecs = pickle.load(f)
@@ -53,8 +53,8 @@ def perform_clustering(npop: int,
 
     clusterer = AC(n_clusters=npop, compute_full_tree=True,linkage="ward")
     lab_infered = clusterer.fit_predict(coordinates)
-
     return lab_infered
+
 def build_distance_subblock(npop, labels, delta):
     blocks = np.zeros((npop, npop), dtype='object')
 
