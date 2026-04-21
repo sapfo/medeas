@@ -68,3 +68,4 @@ target/
 test.what
 
 #personal stuff
+*.DS_Store

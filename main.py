@@ -11,6 +11,7 @@ Created on Mon Jul 10 12:20:25 2017
 import matplotlib
 matplotlib.use('Agg')
 import numpy as np
+import os
 
 from src.simulation import SimulationInfo
 import pickle
@@ -25,18 +26,45 @@ from src.extrapolate_split_time import extrapolate_split_time
 def main():
     # Reading input and creating an object to access the parameters
     simulation = SimulationInfo()
+
+    # In diploid mode, generate only PLINK-based MDS/PCA plots and skip
+    # all other outputs (SFS, distance plots, eigenvalue plots, tree/split inference).
+    if simulation.diploid:
+        simulation.plot_diploid_mds_pca()
+        return
+
+    required_asd = [simulation.asd_pattern.format(1), simulation.asd_pattern.format(2)]
+
+    if simulation.skip_calculate_matrix:
+        missing = [p for p in required_asd if not os.path.isfile(p)]
+        if missing:
+            msg = [
+                "Error: --skip_calculate_matrix was requested, but required ASD matrices are missing:",
+            ]
+            msg.extend([f"  - {p}" for p in missing])
+            msg.append(
+                "Run once without --skip_calculate_matrix to generate these files, or point -of to an existing output folder."
+            )
+            sys.exit("\n".join(msg))
+
     if not simulation.skip_calculate_matrix:
         try:
             compute_asd_matrix(simulation)
         except Exception:
             sys.exit("Error: A problem occurs when computing the distance matrix. Please check that your genotype matrix is in the right format.")
-        simulation.export_sfs()
+
+        if simulation.detailed_output:
+            simulation.export_sfs()
+        else:
+            simulation.export_sfs_simple()
 
     # Loading delta the distance matrix for p = 1
     with open(simulation.asd_pattern.format(1), 'rb') as f:
         delta = pickle.load(f)
 
-    simulation.plot_distance_matrix(delta)
+    # plot distance histogram
+    if simulation.detailed_output:
+        simulation.plot_distance_matrix(delta)
 
     if simulation.output_level > 1:
         print(f"number of individual in the distance matrix: {len(delta)}")
@@ -44,7 +72,21 @@ def main():
     # Compute mds for p = 1 and for p = 2 with all data
     calc_mds(simulation.asd_pattern.format(1), simulation.vec_pattern.format(1))
     calc_mds(simulation.asd_pattern.format(2), simulation.vec_pattern.format(2))
-    simulation.plot_eigenvalues()
+
+    if simulation.detailed_output:
+        simulation.plot_eigenvalues()
+    else:
+        simulation.plot_eigenvalues_simple()
+
+    coordinates_mds = get_mds_coordinate(simulation, 1)
+    simulation.plot_mds(coordinates_mds, "MDS_")
+
+    coordinates_pca = get_mds_coordinate(simulation, 2)
+    simulation.plot_mds(coordinates_pca, "PCA_")
+
+    if simulation.no_split:
+        simulation.generate_mds_pca_only_output()
+        return
 
     # Compute mds for p = 1 and for p = 2 for all bootstrap replicate
     for boot in range(simulation.bootstrap_number):
@@ -52,14 +94,9 @@ def main():
         calc_mds(simulation.asd_pattern.format(1) + suffix, simulation.vec_pattern.format(1) + suffix)
         calc_mds(simulation.asd_pattern.format(2) + suffix, simulation.vec_pattern.format(2) + suffix)
 
-    coordinates_mds = get_mds_coordinate(simulation, 1)
-    simulation.plot_mds(coordinates_mds, "MDS_")
     # ns is the vector of population sample sizes
     ns = build_population_dimension(simulation.K, simulation.numerical_labels)
     simulation.ns = ns
-
-    coordinates_pca = get_mds_coordinate(simulation, 2)
-    simulation.plot_mds(coordinates_pca, "PCA_")
 
     if simulation.K > 1:
         if simulation.topology is None:
