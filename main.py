@@ -79,10 +79,12 @@ def main():
         simulation.plot_eigenvalues_simple()
 
     coordinates_mds = get_mds_coordinate(simulation, 1)
-    simulation.plot_mds(coordinates_mds, "MDS_")
+    if not simulation.no_mds:
+        simulation.plot_mds(coordinates_mds, "MDS_")
 
     coordinates_pca = get_mds_coordinate(simulation, 2)
-    simulation.plot_mds(coordinates_pca, "PCA_")
+    if not simulation.no_pca:
+        simulation.plot_mds(coordinates_pca, "PCA_")
 
     if simulation.no_split:
         simulation.generate_mds_pca_only_output()
