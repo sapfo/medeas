@@ -14,20 +14,37 @@ from random import randint
 import matplotlib.pyplot as plt
 
 
-def _iter_haploid_chunks_from_bed(bfile_prefix: str, chunk_snps: int = 2000, max_snps: int = None):
-    """Yield haploid-coded genotype chunks from a PLINK BED prefix.
+def _iter_pseudohaploid_chunks_from_bed(bfile_prefix: str, chunk_snps: int = 2000, max_snps: int = None):
+    """Yield pseudo-haploid genotype chunks from a PLINK BED prefix.
 
-    Output chunk shape is (n_snps_chunk, 2*n_samples), values in {0,1,2}.
+    Output chunk shape is (n_snps_chunk, n_samples), values in {0,1,2}.
+    Each diploid sample contributes a single pseudo-haploid genotype.
     """
     fam_file = bfile_prefix + ".fam"
     bim_file = bfile_prefix + ".bim"
     bed_file = bfile_prefix + ".bed"
 
+    ## medeas format:
+    ## 0: missing data.
+    ## 1: reference allele.
+    ## 2: alternative allele.
+
+    ## plink format (*.bad):
+    ## Bits 00: homozygous A1
+    ## Bits 01: missing
+    ## Bits 10: heterozygous
+    ## Bits 11: homozygous A2
+
+    ## conversion
+    ## code 0 -> 1, 
+    ## code 1 -> 0 (missing).
+    ## code 2 -> random 1 or 2, 
+    ## code 3 -> 2, 
+
     n_samples = sum(1 for line in open(fam_file) if line.strip())
     n_snps = sum(1 for line in open(bim_file) if line.strip())
     if max_snps is not None:
         n_snps = min(n_snps, max_snps)
-    n_haploid = 2 * n_samples
     n_bytes_per_snp = (n_samples + 3) // 4
 
     rng = np.random.default_rng()
@@ -50,29 +67,115 @@ def _iter_haploid_chunks_from_bed(bfile_prefix: str, chunk_snps: int = 2000, max
             bits = bits[:, : 2 * n_samples].reshape(current, n_samples, 2)
             codes = bits[:, :, 0] + 2 * bits[:, :, 1]
 
-            hap1 = np.zeros((current, n_samples), dtype=np.int8)
-            hap2 = np.zeros((current, n_samples), dtype=np.int8)
+            data = np.zeros((current, n_samples), dtype=np.int8)
 
-            mask_hom_ref = (codes == 0)
-            hap1[mask_hom_ref] = 1
-            hap2[mask_hom_ref] = 1
+            ## homozygous reference allele
+            data[codes == 0] = 1
 
-            mask_hom_alt = (codes == 3)
-            hap1[mask_hom_alt] = 2
-            hap2[mask_hom_alt] = 2
+            ## homozygous alternative allele
+            data[codes == 3] = 2
 
+            ## heterozygote: randomly assign to reference or alternative allele
             mask_het = (codes == 2)
-            flip = rng.random((current, n_samples)) > 0.5
-            hap1[mask_het & ~flip] = 1
-            hap2[mask_het & ~flip] = 2
-            hap1[mask_het & flip] = 2
-            hap2[mask_het & flip] = 1
+            data[mask_het] = rng.integers(1, 3, size=np.count_nonzero(mask_het), dtype=np.int8)
 
-            data = np.empty((current, n_haploid), dtype=np.int8)
-            data[:, 0::2] = hap1
-            data[:, 1::2] = hap2
             done += current
             yield data, done, n_snps
+
+
+def _encode_gt_allele_to_medeas(allele) -> int:
+    """Map allele index to medeas encoding: missing->0, ref->1, alt->2."""
+    if allele is None:
+        return 0
+    if allele == 0:
+        return 1
+    return 2
+
+
+def _iter_pseudohaploid_chunks_from_vcf(
+    variant_file: str,
+    mode: str = "random",
+    chunk_snps: int = 2000,
+    max_snps: int = None,
+):
+    """Yield pseudo-haploid genotype chunks from VCF/BCF (gzipped or plain).
+
+    Modes:
+    - random: always pseudo-haploidize by random allele selection
+    - phased1: if phased use haplotype 1, else random
+    - phased2: if phased use haplotype 2, else random
+    """
+    try:
+        import pysam
+    except ImportError as exc:
+        raise ImportError(
+            "pysam is required for --vcf/--vcf_phased1/--vcf_phased2 input. "
+            "Install it with 'pip install pysam'."
+        ) from exc
+
+    if mode not in {"random", "phased1", "phased2"}:
+        raise ValueError(f"Unsupported variant decoding mode: {mode}")
+
+    rng = np.random.default_rng()
+    vf = pysam.VariantFile(variant_file)
+    n_samples = len(vf.header.samples)
+    if n_samples == 0:
+        vf.close()
+        raise ValueError(f"Variant file has no sample columns: {variant_file}")
+
+    # Counting all records in huge files is expensive; only report a known total
+    # when max_snps limits processing.
+    total_snps = max_snps if max_snps is not None else -1
+
+    chunk = np.empty((chunk_snps, n_samples), dtype=np.int8)
+    row_i = 0
+    done = 0
+
+    use_first_if_phased = (mode == "phased1")
+    use_second_if_phased = (mode == "phased2")
+
+    for rec in vf:
+        if max_snps is not None and done >= max_snps:
+            break
+
+        row = chunk[row_i]
+        rand_pick = None
+        for idx, sample in enumerate(rec.samples.values()):
+            gt = sample.get("GT")
+            if gt is None or len(gt) == 0:
+                allele = None
+            elif len(gt) == 1:
+                allele = gt[0]
+            else:
+                if use_first_if_phased and sample.phased:
+                    allele = gt[0]
+                elif use_second_if_phased and sample.phased:
+                    allele = gt[1]
+                else:
+                    if rand_pick is None:
+                        rand_pick = rng.integers(0, 2, size=n_samples, dtype=np.int8)
+                    allele = gt[int(rand_pick[idx])]
+
+            if allele is None:
+                row[idx] = 0
+            elif allele == 0:
+                row[idx] = 1
+            else:
+                row[idx] = 2
+
+        row_i += 1
+        done += 1
+
+        if row_i == chunk_snps:
+            emit = chunk
+            chunk = np.empty((chunk_snps, n_samples), dtype=np.int8)
+            yield emit, done, total_snps
+            row_i = 0
+
+    vf.close()
+
+    if row_i > 0:
+        yield chunk[:row_i], done, total_snps
 
 
 
@@ -181,6 +284,8 @@ def  compute_asd_matrix(simulation) -> None:
 
     name =  simulation.snps_pattern
     bfile_prefix = getattr(simulation, "bfile_prefix", None)
+    vcf_file = getattr(simulation, "vcf_file", None)
+    vcf_mode = getattr(simulation, "vcf_mode", "random")
     bootsize = simulation.bootsize
     no_split = simulation.no_split
     max_snps = getattr(simulation, "max_snps", None)
@@ -205,7 +310,9 @@ def  compute_asd_matrix(simulation) -> None:
     if bfile_prefix is not None:
         fam_file = bfile_prefix + ".fam"
         n_samples = sum(1 for line in open(fam_file) if line.strip())
-        N = 2 * n_samples
+        N = n_samples
+    elif vcf_file is not None:
+        N = len(simulation.labels)
     else:
         with open(name) as f:
             N = len(f.readline()) // 2
@@ -247,8 +354,26 @@ def  compute_asd_matrix(simulation) -> None:
     # Frequency histogram for folded SFS to avoid repeated np.append reallocations.
     sfs_counts = np.zeros((N + 1,), dtype=np.int64)
     if bfile_prefix is not None:
-        for data, done, total in _iter_haploid_chunks_from_bed(bfile_prefix, max_snps=max_snps):
+        for data, done, total in _iter_pseudohaploid_chunks_from_bed(bfile_prefix, max_snps=max_snps):
             print(f'   Chunk loaded ({data.shape[0]} sites, {data.shape[1]} individuals) [{done}/{total}]')
+
+            nb_mut = np.sum(data == 1, axis=1)
+            nb_missing = np.sum(data == 0, axis=1)
+            nb_mut[np.where((N - nb_missing) == 0)] = 0
+            nb_missing[np.where((N - nb_missing) == 0)] = 1
+            freq = nb_mut / (N - nb_missing)
+            nb_other_mut = np.random.binomial(nb_missing, freq, len(nb_mut))
+            nb_mut = nb_mut + nb_other_mut
+            nb_mut[nb_mut > N / 2] = N - nb_mut[nb_mut > N / 2]
+            vals, cnts = np.unique(nb_mut.astype(int), return_counts=True)
+            sfs_counts[vals] += cnts
+            process_chunks(data)
+    elif vcf_file is not None:
+        for data, done, total in _iter_pseudohaploid_chunks_from_vcf(
+            vcf_file, mode=vcf_mode, max_snps=max_snps
+        ):
+            progress_total = '?' if total < 0 else str(total)
+            print(f'   Chunk loaded ({data.shape[0]} sites, {data.shape[1]} individuals) [{done}/{progress_total}]')
 
             nb_mut = np.sum(data == 1, axis=1)
             nb_missing = np.sum(data == 0, axis=1)

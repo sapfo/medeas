@@ -178,88 +178,175 @@ def _plot_eigenvalues_array(eigenvalues: np.ndarray, file_path: str):
     plt.close(fig)
 
 
+def _get_variant_samples(variant_path: str):
+    """Extract sample IDs from VCF/BCF (gzipped or plain) using pysam."""
+    try:
+        import pysam
+    except ImportError as exc:
+        raise ImportError(
+            "pysam is required for --vcf/--vcf_phased1/--vcf_phased2 input. "
+            "Install it with 'pip install pysam'."
+        ) from exc
+
+    vf = pysam.VariantFile(variant_path)
+    return list(vf.header.samples)
+
+
+def _count_nonempty_lines(path: str) -> int:
+    with open(path) as f:
+        return sum(1 for line in f if line.strip())
+
+
 
 class SimulationInfo(object):
 
     def __init__(self):
         parser = argparse.ArgumentParser()
 
-        parser.add_argument("-sf", "--snps_file",
-                            help="The name of the file from which the pattern should be read. ")
-        parser.add_argument("-lf", "--labels_file", help="File containing the labels")
-        parser.add_argument("-of", "--output_folder", help="Folder where results and temporal data should be store")
+        input_group = parser.add_argument_group(
+            "Input source (required, choose exactly one)"
+        )
+        input_source = input_group.add_mutually_exclusive_group(required=True)
 
-        parser.add_argument("-bws", "--boot_window_size",
-                            help="How many markers do we have in each bootstraping windows",
-                            type=int, default=100)
-        parser.add_argument("-bsn","--bootstrap_number",
-                            help="How many bootstrap do we perform",
-                            type=int, default=100
-                            )
+        input_source.add_argument("--snps",
+                                  help="SNP file in MEDEAS format (one SNP per row, space-separated integers, one column per individual).")
 
-        parser.add_argument("-t","--topology",
-                            help="What is the topology of the population (newick format, following label order)",
-                            type=str, default=None
-                            )
+        input_source.add_argument("--bfile",
+                                  help="PLINK binary file prefix (.bed/.bim/.fam). "
+                                        "Conversion to pseudo-haploid individuals.",
+                                  type=str, default=None)
 
-        parser.add_argument("--skip_calculate_matrix",
-                            help="Skip the computation of the distance matrices and the related MDS matrix",
-                            action="store_true")
+        input_source.add_argument("--vcf",
+                                  help="VCF/BCF input (gzipped or plain). "
+                                       "Conversion to pseudo-haploid individuals.",
+                                  type=str, default=None)
 
-        parser.add_argument("--output_level", help="How many information should be printed & saved: 0 -minimal, 1 - conventional, 2 - most of it",
-                            type=int, default=0)
+        input_source.add_argument("--vcf_phased1",
+                                  help="VCF/BCF input (gzipped or plain). "
+                                       "If genotype is phased, use first haplotype; "
+                                       "if unphased, pseudo-haploidize.",
+                                  type=str, default=None)
 
-        parser.add_argument("--threads", help="Number of parallel process to be launch. 0 (default) used all available cores",
-                            type=int, default=0)
+        input_source.add_argument("--vcf_phased2",
+                                  help="VCF/BCF input (gzipped or plain). "
+                                       "If genotype is phased, use second haplotype; "
+                                       "if unphased, pseudo-haploidize.",
+                                  type=str, default=None)
 
-        parser.add_argument("--no_split",
-                            help="Skip tree and split-time estimation; compute only distance, MDS, and PCA outputs",
-                            action="store_true")
+        options_group = parser.add_argument_group("options")
 
-        parser.add_argument("--detailed_output",
-                            help="Return detailed output",
-                            action="store_true")
+        options_group.add_argument("--labels", help="File containing the labels")
+    
+        options_group.add_argument("--out_dir", help="Folder where results and temporal data should be store")
 
-        parser.add_argument("--bfile",
-                            help="PLINK binary file prefix (.bed/.bim/.fam). "
-                                 "If provided, --snps_file and --labels_file are not needed; "
-                                 "the PLINK data is converted automatically.",
-                            type=str, default=None)
+        options_group.add_argument("-bws", "--boot_window_size",
+                                   help="How many markers do we have in each bootstraping windows",
+                                   type=int, default=100)
+                            
+        options_group.add_argument("-bsn", "--bootstrap_number",
+                                   help="How many bootstrap do we perform",
+                                   type=int, default=100)
 
-        parser.add_argument("--max_snps",
-                           help="Maximum number of SNPs to process (for faster tests). "
-                               "By default, process all SNPs.",
-                           type=int, default=None)
+        options_group.add_argument("-t", "--topology",
+                                   help="What is the topology of the population (newick format, following label order)",
+                                   type=str, default=None)
 
-        parser.add_argument("--diploid",
-                            help="Plot MDS and PCA using PLINK routines (for diploid data). "
-                                 "Requires --bfile.",
-                            action="store_true")
+        options_group.add_argument("--skip_calculate_matrix",
+                                   help="Skip the computation of the distance matrices and the related MDS matrix",
+                                   action="store_true")
 
-        parser.add_argument("--plink_path",
-                            help="Path to the PLINK executable (default: 'plink')",
-                            type=str, default="plink")
+        options_group.add_argument("--output_level",
+                                   help="How many information should be printed & saved: 0 -minimal, 1 - conventional, 2 - most of it",
+                                   type=int, default=0)
 
-        parser.add_argument("-k", "--k",
-                    help="Number of eigenvalues to compute and plot (default: all, i.e. n_samples-1)",
-                    type=int, default=0)
+        options_group.add_argument("--threads",
+                                   help="Number of parallel process to be launch. 0 (default) used all available cores",
+                                   type=int, default=0)
+
+        options_group.add_argument("--no_split",
+                                   help="Skip tree and split-time estimation; compute only distance, MDS, and PCA outputs",
+                                   action="store_true")
+
+        options_group.add_argument("--detailed_output",
+                                   help="Return detailed output",
+                                   action="store_true")
+
+        options_group.add_argument("--max_snps",
+                                   help="Maximum number of SNPs to process (for faster tests). "
+                                        "By default, process all SNPs.",
+                                   type=int, default=None)
+
+        options_group.add_argument("--use_plink",
+                                   help="Plot MDS and PCA using PLINK routines. "
+                                        "Requires --bfile.",
+                                   action="store_true")
+
+        options_group.add_argument("--plink_path",
+                                   help="Path to the PLINK executable (default: 'plink')",
+                                   type=str, default="plink")
+
+        options_group.add_argument("-k", "--k",
+                                   help="Number of eigenvalues to compute and plot (default: all, i.e. n_samples-1)",
+                                   type=int, default=0)
+
+        options_group.add_argument("--plot_dims",
+                                   help="Pairs of dimensions to plot, 1-based, space-separated (e.g. '1,2 3,4'). "
+                                        "Default: consecutive pairs (1,2), (3,4), ...",
+                                   type=str, default=None)
+
+        options_group.add_argument("--no_mds",
+                                   help="Do not generate MDS scatter plots.",
+                                   action="store_true")
+
+        options_group.add_argument("--no_pca",
+                                   help="Do not generate PCA scatter plots.",
+                                   action="store_true")
 
         args = parser.parse_args()
 
-        if args.bfile is None and (args.snps_file is None or args.labels_file is None):
-            sys.exit("Error: either --bfile or both --snps_file and --labels_file must be provided.")
+        using_bfile = args.bfile is not None
+        using_vcf = args.vcf is not None
+        using_vcf_phased1 = args.vcf_phased1 is not None
+        using_vcf_phased2 = args.vcf_phased2 is not None
+        using_snps = args.snps is not None
 
-        if args.diploid and args.bfile is None:
-            sys.exit("Error: --diploid is only supported with PLINK input (--bfile).")
+        if using_snps and args.labels is None:
+            sys.exit("Error: --labels is required with --snps.")
 
-        if args.diploid and (args.snps_file is not None or args.labels_file is not None):
-            sys.exit("Error: --diploid requires plink input.")
+        if args.use_plink and args.bfile is None:
+            sys.exit("Error: --use_plink is only supported with PLINK input (--bfile).")
+
+        if args.use_plink and (
+            args.snps is not None
+            or args.vcf is not None
+            or args.vcf_phased1 is not None
+            or args.vcf_phased2 is not None
+        ):
+            sys.exit("Error: --use_plink requires PLINK input (--bfile).")
 
         if args.k < 0:
             sys.exit("Error: -k/--k must be >= 0 (0 means all dimensions).")
 
+        # Parse --plot_dims into a list of 0-based (p, q) pairs.
+        if args.plot_dims is not None:
+            plot_dims = []
+            for token in args.plot_dims.split():
+                parts = token.split(",")
+                if len(parts) != 2:
+                    sys.exit(f"Error: --plot_dims token '{token}' must be two comma-separated integers (e.g. '1,2').")
+                try:
+                    p1, p2 = int(parts[0]) - 1, int(parts[1]) - 1
+                except ValueError:
+                    sys.exit(f"Error: --plot_dims token '{token}' must contain integers.")
+                if p1 < 0 or p2 < 0:
+                    sys.exit(f"Error: --plot_dims dimensions are 1-based; got '{token}'.")
+                plot_dims.append((p1, p2))
+            self.plot_dims = plot_dims
+        else:
+            self.plot_dims = None  # auto: consecutive pairs
+
         # Create output folder first (required before bfile conversion)
-        self.output_folder = args.output_folder
+        self.output_folder = args.out_dir
         if not os.path.exists(self.output_folder):
             os.makedirs(self.output_folder)
 
@@ -276,25 +363,77 @@ class SimulationInfo(object):
                     sys.exit(f"Error: Missing PLINK file: {path}")
 
             self.bfile_prefix = bfile_prefix
+            self.vcf_file = None
+            self.vcf_mode = None
             self.snps_pattern = None
 
-            # Build haploid labels directly from FAM (each diploid sample -> 2 labels).
-            labels_file = os.path.join(self.output_folder, "labels_from_fam.dat")
-            with open(fam_file) as fin, open(labels_file, "w") as fout:
-                for line in fin:
-                    parts = line.strip().split()
-                    if not parts:
-                        continue
-                    fid = parts[0]
-                    fout.write(fid + "\n")
-                    fout.write(fid + "\n")
-            self.labels_file = labels_file
+            if args.labels is not None:
+                if not os.path.isfile(args.labels):
+                    sys.exit("Error: The file containing the label does not exist. Exiting Now.")
+                n_labels = _count_nonempty_lines(args.labels)
+                n_samples = sum(1 for line in open(fam_file) if line.strip())
+                if n_labels != n_samples:
+                    sys.exit(
+                        f"Error: label file has {n_labels} labels but input contains {n_samples} individuals."
+                    )
+                self.labels_file = args.labels
+            else:
+                # Build one label per sample from FAM.
+                labels_file = os.path.join(self.output_folder, "labels_from_fam.dat")
+                with open(fam_file) as fin, open(labels_file, "w") as fout:
+                    for line in fin:
+                        parts = line.strip().split()
+                        if not parts:
+                            continue
+                        fid = parts[0]
+                        fout.write(fid + "\n")
+                self.labels_file = labels_file
+        elif args.vcf is not None or args.vcf_phased1 is not None or args.vcf_phased2 is not None:
+            selected_variant = args.vcf
+            vcf_mode = "random"
+            if args.vcf_phased1 is not None:
+                selected_variant = args.vcf_phased1
+                vcf_mode = "phased1"
+            elif args.vcf_phased2 is not None:
+                selected_variant = args.vcf_phased2
+                vcf_mode = "phased2"
+
+            if not os.path.isfile(selected_variant):
+                sys.exit(f"Error: variant file not found: {selected_variant}")
+            self.bfile_prefix = None
+            self.vcf_file = selected_variant
+            self.vcf_mode = vcf_mode
+            self.snps_pattern = None
+
+            try:
+                sample_ids = _get_variant_samples(selected_variant)
+            except Exception as exc:
+                sys.exit(f"Error: unable to parse variant header: {exc}")
+            if len(sample_ids) == 0:
+                sys.exit("Error: variant file contains no samples.")
+            if args.labels is not None:
+                if not os.path.isfile(args.labels):
+                    sys.exit("Error: The file containing the label does not exist. Exiting Now.")
+                n_labels = _count_nonempty_lines(args.labels)
+                if n_labels != len(sample_ids):
+                    sys.exit(
+                        f"Error: label file has {n_labels} labels but input contains {len(sample_ids)} individuals."
+                    )
+                self.labels_file = args.labels
+            else:
+                labels_file = os.path.join(self.output_folder, "labels_from_vcf.dat")
+                with open(labels_file, "w") as fout:
+                    for sid in sample_ids:
+                        fout.write(sid + "\n")
+                self.labels_file = labels_file
         else:
             self.bfile_prefix = None
-            self.snps_pattern = args.snps_file
+            self.vcf_file = None
+            self.vcf_mode = None
+            self.snps_pattern = args.snps
             if not os.path.isfile(self.snps_pattern):
                 sys.exit("Error: The file containing the genotype does not exist. Exiting Now.")
-            self.labels_file = args.labels_file
+            self.labels_file = args.labels
             if not os.path.isfile(self.labels_file):
                 sys.exit("Error: The file containing the label does not exist. Exiting Now.")
 
@@ -308,15 +447,23 @@ class SimulationInfo(object):
         self.topology = args.topology
         self.no_split = args.no_split
         self.detailed_output = args.detailed_output
+        self.no_mds = args.no_mds
+        self.no_pca = args.no_pca
         self.max_snps = args.max_snps
         if self.max_snps is not None and self.max_snps <= 0:
             sys.exit("Error: --max_snps must be a positive integer.")
 
-        self.diploid = args.diploid
+        self.diploid = args.use_plink
         self.plink_path = args.plink_path
         self.plink_k = args.k
         if self.diploid and self.bfile_prefix is None:
-            sys.exit("Error: --diploid requires --bfile to be provided.")
+            sys.exit("Error: --use_plink requires --bfile to be provided.")
+
+        if self.bfile_prefix is not None or self.diploid:
+            import shutil
+            if shutil.which(self.plink_path) is None:
+                sys.exit(f"Error: PLINK executable not found: '{self.plink_path}'. "
+                         "Install PLINK or pass the correct path with --plink_path.")
 
         self.logfile = os.path.join(self.output_folder, "simulation.log")
         self.generate_initial_output(args)
@@ -565,8 +712,18 @@ in the distance matrix. Exiting Now.")
             colors = cmap(np.linspace(0, 1.0, nb_groups))
 
         n_dim = coordinate.shape[1]
-        for p in range(0, n_dim - 1, 2):
-            q = p + 1
+        if self.plot_dims is not None:
+            for p, q in self.plot_dims:
+                if p >= n_dim or q >= n_dim:
+                    sys.exit(
+                        f"Error: --plot_dims requested dimension pair ({p+1},{q+1}) but only "
+                        f"{n_dim} dimension(s) were computed. "
+                        f"Increase -k/--k or reduce the requested dimensions."
+                    )
+            pairs = self.plot_dims
+        else:
+            pairs = [(p, p + 1) for p in range(0, n_dim - 1, 2)]
+        for p, q in pairs:
             plt.rcParams.update({'font.size': 22})
             fig, ax = plt.subplots(figsize=(15, 15))
             for population_index, population_name in enumerate(unique_labels):
@@ -601,11 +758,7 @@ in the distance matrix. Exiting Now.")
         plink_path = self.plink_path
         threads = self.NCORE
 
-        # Build diploid (one-per-sample) labels from FAM FID column
-        fam = pd.read_csv(f"{bfile}.fam", sep=r"\s+", header=None,
-                          names=["FID", "IID", "PAT", "MAT", "SEX", "PHENO"],
-                          dtype=str)
-        diploid_labels = np.array(fam["FID"].tolist())
+        diploid_labels = np.array(self.labels)
 
         # k=0 means all available dimensions.
         if self.plink_k == 0:
@@ -623,11 +776,13 @@ in the distance matrix. Exiting Now.")
                 bfile, k, dist_path, plink_path, "", threads, tmpdir
             )
             _plot_eigenvalues_array(eigenvalues_mds, os.path.join(self.output_folder, "eigenvalues.pdf"))
-            self.plot_mds(coords_mds, "plink_MDS_", labels_override=diploid_labels)
+            if not self.no_mds:
+                self.plot_mds(coords_mds, "plink_MDS_", labels_override=diploid_labels)
 
             # --- PCA via PLINK ---
             coords_pca, _ = _compute_pca_plink(bfile, k, plink_path, threads, tmpdir)
-            self.plot_mds(coords_pca, "plink_PCA_", labels_override=diploid_labels)
+            if not self.no_pca:
+                self.plot_mds(coords_pca, "plink_PCA_", labels_override=diploid_labels)
 
     def save_tree(self):
         """Write the information about the infered tree into a file"""

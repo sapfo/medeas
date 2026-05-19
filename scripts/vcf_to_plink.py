@@ -15,12 +15,14 @@ import sys
 
 
 def apply_labels_to_fam(fam_path, labels_file):
+    ## read labels
     with open(labels_file) as f:
         labels = [line.strip() for line in f if line.strip()]
 
     if not labels:
         raise ValueError("Labels file is empty")
 
+    ## read FAM file
     with open(fam_path) as f:
         fam_rows = [line.strip().split() for line in f if line.strip()]
 
@@ -29,6 +31,7 @@ def apply_labels_to_fam(fam_path, labels_file):
             f"Labels file has {len(labels)} entries but FAM has {len(fam_rows)} samples"
         )
 
+    ## rewrite fam file
     with open(fam_path, "w") as f:
         for label, row in zip(labels, fam_rows):
             if len(row) < 6:
@@ -49,18 +52,18 @@ def convert_vcf_to_plink(vcf_file, out_prefix, plink_path, allow_extra_chr, thre
 
     if threads < 0:
         raise ValueError("threads must be >= 0 (0 means all cores)")
+    if threads == 0:
+        threads = os.cpu_count()
 
     out_dir = os.path.dirname(out_prefix)
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
 
-    worker_count = (os.cpu_count() if threads == 0 else threads) or 1
-
     cmd = [
         plink_path,
         "--vcf", vcf_file,
         "--make-bed",
-        "--threads", str(worker_count),
+        "--threads", str(threads),
         "--out", out_prefix,
     ]
     if allow_extra_chr:
@@ -89,7 +92,7 @@ def main():
     parser.add_argument("-o", "--out", required=True,
                         help="Output PLINK prefix (writes .bed/.bim/.fam)")
     parser.add_argument("--labels", default=None,
-                        help="Optional labels file with one label per sample; used to set FID in output .fam")
+                        help="Optional labels file with one label per line; used to set FID in output .fam")
     parser.add_argument("--plink-path", default="plink",
                         help="Path to the PLINK executable (default: plink)")
     parser.add_argument("--no-allow-extra-chr", dest="allow_extra_chr", action="store_false", default=True,

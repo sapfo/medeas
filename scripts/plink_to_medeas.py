@@ -7,8 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 
 
-def _convert_chunk_to_haploid(raw_chunk, n_samples, seed):
-    """Convert one BED SNP chunk to haploid-style genotype rows."""
+def _convert_chunk_to_pseudohaploid(raw_chunk, n_samples, seed):
+    """Convert one BED SNP chunk to one pseudo-haploid column per sample."""
     current = raw_chunk.shape[0]
     rng = np.random.default_rng(seed)
 
@@ -16,43 +16,27 @@ def _convert_chunk_to_haploid(raw_chunk, n_samples, seed):
     bits = bits[:, : 2 * n_samples].reshape(current, n_samples, 2)
     codes = bits[:, :, 0] + 2 * bits[:, :, 1]
 
-    hap1 = np.zeros((current, n_samples), dtype=np.int8)
-    hap2 = np.zeros((current, n_samples), dtype=np.int8)
+    data = np.zeros((current, n_samples), dtype=np.int8)
 
-    mask_hom_ref = codes == 0
-    hap1[mask_hom_ref] = 1
-    hap2[mask_hom_ref] = 1
+    ## homozygote
+    data[codes == 0] = 1
+    data[codes == 3] = 2
 
-    mask_hom_alt = codes == 3
-    hap1[mask_hom_alt] = 2
-    hap2[mask_hom_alt] = 2
-
-    mask_het = codes == 2
-    flip = rng.random((current, n_samples)) > 0.5
-    hap1[mask_het & ~flip] = 1
-    hap2[mask_het & ~flip] = 2
-    hap1[mask_het & flip] = 2
-    hap2[mask_het & flip] = 1
-
-    geno_haploid = np.empty((current, 2 * n_samples), dtype=np.int8)
-    geno_haploid[:, 0::2] = hap1
-    geno_haploid[:, 1::2] = hap2
-    return geno_haploid
+    ## heterozygote
+    mask_het = (codes == 2)
+    data[mask_het] = rng.integers(1, 3, size=np.count_nonzero(mask_het), dtype=np.int8)
+    return data
 
 
 def convert_plink_to_medeas(bfile_prefix, snp_file, labels_file, threads=1):
-    """Convert PLINK binary files (.bed/.bim/.fam) to the medeas haploid format.
+    """Convert PLINK binary files (.bed/.bim/.fam) to pseudo-haploid medeas format.
 
-    Mirrors the shell pipeline in launch.sh:
-      1. PLINK --recode12 --transpose -> alleles encoded as 1/2, missing as 0.
-      2. Each diploid individual is split into two haploid pseudoindividuals
-         (the two alleles), with heterozygous sites randomly phased.
-      3. Population labels (FAM family-ID) are written once per haploid
-         pseudoindividual (each label appears twice).
+    Each diploid individual contributes one pseudo-haploid genotype column.
+    Homozygous states are kept as-is, and heterozygous states are sampled
+    uniformly as 1 or 2.
 
     Output format (snp_file):
-      - One SNP per row, space-separated integers.
-      - Column order: hap1_ind1 hap2_ind1 hap1_ind2 hap2_ind2 ...
+      - One SNP per row, Individual per column, space-separated integers.
       - Values: 0=missing, 1=ref allele (A1), 2=alt allele (A2).
     """
     fam_file = bfile_prefix + ".fam"
@@ -113,9 +97,9 @@ def convert_plink_to_medeas(bfile_prefix, snp_file, labels_file, threads=1):
                 raw = raw.reshape(current, n_bytes_per_snp)
 
                 seed = int(rng.integers(0, np.iinfo(np.int64).max, dtype=np.int64))
-                geno_haploid = _convert_chunk_to_haploid(raw, n_samples, seed)
+                geno_pseudohaploid = _convert_chunk_to_pseudohaploid(raw, n_samples, seed)
 
-                np.savetxt(out, geno_haploid, fmt="%d", delimiter=" ")
+                np.savetxt(out, geno_pseudohaploid, fmt="%d", delimiter=" ")
                 snp_done += current
                 if snp_done % 20000 == 0 or snp_done == n_snps:
                     print(f"Converted {snp_done}/{n_snps} SNPs")
@@ -131,7 +115,7 @@ def convert_plink_to_medeas(bfile_prefix, snp_file, labels_file, threads=1):
                     raw = raw.reshape(current, n_bytes_per_snp)
 
                     seed = int(rng.integers(0, np.iinfo(np.int64).max, dtype=np.int64))
-                    future = executor.submit(_convert_chunk_to_haploid, raw, n_samples, seed)
+                    future = executor.submit(_convert_chunk_to_pseudohaploid, raw, n_samples, seed)
                     pending.append((current, future))
 
                     if len(pending) >= max_pending:
@@ -152,20 +136,19 @@ def convert_plink_to_medeas(bfile_prefix, snp_file, labels_file, threads=1):
     with open(labels_file, "w") as f:
         for fid in family_ids:
             f.write(fid + "\n")
-            f.write(fid + "\n")
 
     print("PLINK conversion complete.")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Convert diploid PLINK .bed/.bim/.fam files to pseudo-haploid medeas SNP/labels files (N -> 2N)"
+        description="Convert diploid PLINK .bed/.bim/.fam files to pseudo-haploid medeas SNP/labels files (N -> N)"
     )
     parser.add_argument("--bfile", required=True,
                         help="PLINK file prefix (without .bed/.bim/.fam)")
-    parser.add_argument("--snp-out", required=True,
+    parser.add_argument("--snp_out", required=True,
                         help="Output SNP matrix file (medeas format)")
-    parser.add_argument("--labels-out", required=True,
+    parser.add_argument("--labels_out", required=True,
                         help="Output labels file (medeas format)")
     parser.add_argument("-t", "--threads", type=int, default=1,
                         help="Number of worker threads for chunk conversion (0 = all cores)")

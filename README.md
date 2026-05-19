@@ -87,6 +87,11 @@ Two scripts are also available to change the format from a vcf file to the inter
 ```snakemake --use-conda```
 Using this command, you don’t need to have python 3.6 and plink install, conda will take care of it for you. 
 - [script/launch.sh](script/launch.sh): This is a bash script which first convert the file [script/CEU_YRI.chr22.vcf.gz](script/CEU_YRI.chr22.vcf.gz) and [script/label.lab](script/label.lab) into Medeas internal format and then run medeas with thess files. This script is easy to adapt for your own data. It requires plink and common UNIX tools to be installed
+- [script/medeas_to_plink.py](script/medeas_to_plink.py): Convert Medeas internal format back to PLINK transposed text format (`.tped/.tfam`) or PLINK binary format (`.bed/-bim/.fam`). Example:
+```bash
+python script/medeas_to_plink.py -sf test/snp.dat -lf test/pop_label.dat -o out_prefix
+python script/medeas_to_plink.py -sf test/snp.dat -lf test/pop_label.dat -o out_prefix --make-bed
+```
 
 ## Publication
 Pending.

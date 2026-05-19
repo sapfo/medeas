@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """Convert a VCF/BCF file to the medeas pseudo-haploid format.
 
-Replicates the pipeline in launch.sh:
-  1. PLINK converts VCF → BED (in a temporary directory).
-  2. Each diploid individual is split into two pseudo-haploid columns;
-     heterozygous sites are randomly phased.
-  3. Population labels are written twice per individual (once per haploid).
+Workflow:
+  1. PLINK converts VCF -> BED (in a temporary directory).
+  2. Each diploid individual is converted to one pseudo-haploid column;
+     heterozygous sites are randomly sampled as 1 or 2.
+  3. Population labels are written once per individual.
 
 Population labels are taken from the FAM file produced by PLINK (= VCF sample
-IDs) unless ``--labels`` is supplied, in which case that file is used verbatim
-(one label per diploid individual).
+IDs) unless --labels is supplied, in which case that file is used verbatim.
 """
 
 import argparse
@@ -32,28 +31,8 @@ def convert_vcf_to_medeas(
     allow_extra_chr=True,
     threads=1,
 ):
-    """Convert *vcf_file* to the medeas pseudo-haploid format.
+    """Convert vcf_file to the medeas pseudo-haploid format.
 
-    Parameters
-    ----------
-    vcf_file:
-        Path to the input VCF/BCF (may be gzip-compressed).
-    snp_file:
-        Path for the output SNP matrix (medeas format).
-    labels_file:
-        Path for the output haploid labels file.
-    labels_input:
-        Optional path to a file with one population label per diploid
-        individual.  When given, it overrides the sample IDs produced by
-        PLINK.
-    plink_path:
-        Path (or name) of the PLINK 1.9 executable.
-    allow_extra_chr:
-        Pass ``--allow-extra-chr`` to PLINK (required for non-human
-        chromosome names, as in the example VCF).
-    threads:
-        Worker threads for the BED→medeas conversion step (0 = all cores).
-    """
     if not os.path.isfile(vcf_file):
         raise FileNotFoundError(f"VCF file not found: {vcf_file}")
 
@@ -96,7 +75,6 @@ def convert_vcf_to_medeas(
             with open(labels_file, "w") as f:
                 for lbl in diploid_labels:
                     f.write(lbl + "\n")
-                    f.write(lbl + "\n")
 
     print("VCF conversion complete.")
 
@@ -112,7 +90,7 @@ def main():
     parser.add_argument("--labels", metavar="FILE", default=None,
                         help="Optional input labels file with one population label per diploid individual (same order as VCF samples).  When omitted, VCF sample IDs are used.")
     parser.add_argument("--labels-out", required=True, metavar="FILE",
-                        help="Output haploid labels file (one label per haploid pseudoindividual).")
+                        help="Output labels file (one label per pseudo-haploid individual).")
     parser.add_argument("--plink-path", default="plink", metavar="PATH",
                         help="Path to the PLINK 1.9 executable (default: plink).")
     parser.add_argument("--no-allow-extra-chr", dest="allow_extra_chr", action="store_false", default=True,

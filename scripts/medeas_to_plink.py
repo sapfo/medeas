@@ -6,8 +6,8 @@ Medeas internal format:
 - one haploid individual per column
 - values: 0 = missing, 1 = reference allele, 2 = alternative allele
 
-This script pairs consecutive haploid columns into diploid samples, creates a
-temporary PLINK transposed dataset, then always emits only:
+Each haploid column is converted to a homozygous diploid sample (N -> N).
+Creates a temporary PLINK transposed dataset, then always emits only:
 - <prefix>.bed
 - <prefix>.bim
 - <prefix>.fam
@@ -34,25 +34,14 @@ def read_labels(labels_file):
         labels = [line.strip() for line in f if line.strip()]
     if not labels:
         raise ValueError("Label file is empty")
-    if len(labels) % 2 != 0:
-        raise ValueError(
-            "Medeas label file must contain an even number of haploid labels so they can be paired into diploid samples"
-        )
     return labels
 
 
 def write_tfam(labels, tfam_path):
     with open(tfam_path, "w") as f:
-        for sample_index in range(0, len(labels), 2):
-            label1 = labels[sample_index]
-            label2 = labels[sample_index + 1]
-            if label1 != label2:
-                raise ValueError(
-                    f"Expected consecutive haploid labels to match for diploid reconstruction, got '{label1}' and '{label2}' at lines {sample_index + 1}-{sample_index + 2}"
-                )
-            diploid_index = sample_index // 2 + 1
-            fid = label1
-            iid = f"{label1}_{diploid_index}"
+        for sample_index, label in enumerate(labels, start=1):
+            fid = label
+            iid = f"{label}_{sample_index}"
             f.write(f"{fid} {iid} 0 0 0 -9\n")
 
 
@@ -66,19 +55,16 @@ def convert_row_to_tped_line(snp_index, line, expected_haploids, chrom):
             f"Row {snp_index} has {len(genotypes)} columns but label file has {expected_haploids} haploid labels"
         )
 
-    if len(genotypes) % 2 != 0:
-        raise ValueError("Each SNP row must contain an even number of haploid genotype columns")
-
     fields = []
-    for idx in range(0, len(genotypes), 2):
+    for geno in genotypes:
         try:
-            a1 = ALLELE_MAP[genotypes[idx]]
-            a2 = ALLELE_MAP[genotypes[idx + 1]]
+            allele = ALLELE_MAP[geno]
         except KeyError as exc:
             raise ValueError(
                 f"Unexpected genotype code '{exc.args[0]}'; expected only 0, 1, or 2"
             ) from exc
-        fields.extend([a1, a2])
+        # homozygous diploid: repeat the same allele twice
+        fields.extend([allele, allele])
 
     marker_id = f"snp{snp_index}"
     position = snp_index
@@ -154,13 +140,13 @@ def convert_medeas_to_plink(snps_file, labels_file, out_prefix, chrom, plink_pat
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Convert haploid medeas files to diploid PLINK BED/BIM/FAM files (2N -> N)"
+        description="Convert haploid medeas files to homozygous diploid PLINK BED/BIM/FAM files (N -> N)"
     )
-    parser.add_argument("-sf", "--snps_file", required=True,
-                        help="Medeas genotype matrix (one SNP per row, haploid columns)")
-    parser.add_argument("-lf", "--labels_file", required=True,
+    parser.add_argument("--snps", required=True,
+                        help="SNP file in MEDEAS format (one SNP per row, space-separated integers, one column per individual).")
+    parser.add_argument("--labels", required=True,
                         help="Medeas label file (one haploid label per line)")
-    parser.add_argument("-o", "--out", required=True,
+    parser.add_argument("--out", required=True,
                         help="Output PLINK prefix (writes .bed/.bim/.fam)")
     parser.add_argument("--chrom", default="1",
                         help="Chromosome code to use in TPED conversion (default: 1)")
@@ -172,8 +158,8 @@ def main():
 
     try:
         convert_medeas_to_plink(
-            args.snps_file,
-            args.labels_file,
+            args.snps,
+            args.labels,
             args.out,
             args.chrom,
             args.plink_path,

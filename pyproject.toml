@@ -10,14 +10,15 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = { file = "LICENSE" }
 authors = [
-  { name = "Ivan Levkivskyi, Frederic Michaud, Anna-Sapfo Malaspinas" }
+  { name = "Ivan Levkivskyi, Frederic Michaud, Samuel Neuenschwander, Anna-Sapfo Malaspinas" }
 ]
 dependencies = [
   "numpy",
   "matplotlib",
   "scikit-learn",
   "scikit-bio",
-  "scipy"
+  "scipy",
+  "pysam"
 ]
 
 [project.scripts]
