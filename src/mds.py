@@ -1,14 +1,19 @@
+import gzip
 import numpy as np
 import pickle
 
 
-def calc_mds(file: str, outfile: str) -> None:
+def calc_mds(file: str, outfile: str, title = 'MDS') -> None:
     """Read distance matrix from 'file', calculate the eigensystem,
     and store it into 'outfile'.
     """
 
-    with open(file, 'rb') as f:
-         delta = pickle.load(f)
+    #print(f"Calculating {title} for distance matrix: {file}")
+    if file.endswith("mdist.gz") or file.endswith(".mdist"):
+        delta = np.loadtxt(file)
+    else:
+        with open(file, 'rb') as f:
+            delta = pickle.load(f)
 
     N = len(delta)
 

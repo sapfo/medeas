@@ -16,8 +16,6 @@ import argparse
 import contextlib
 import io
 import os
-import shutil
-import subprocess
 import sys
 
 
@@ -28,61 +26,18 @@ GENOTYPE_MAP = {
 }
 
 
-def read_labels(labels_file):
-    with open(labels_file) as f:
-        labels = [line.strip() for line in f if line.strip()]
-    if not labels:
-        raise ValueError("Label file is empty")
-    return labels
-
-
-def make_unique_sample_ids(labels):
-    counts = {}
-    sample_ids = []
-    had_duplicates = False
-
-    for label in labels:
-        counts[label] = counts.get(label, 0) + 1
-        n = counts[label]
-        if n == 1:
-            sample_ids.append(label)
-        else:
-            had_duplicates = True
-            sample_ids.append(f"{label}_{n}")
-
-    if had_duplicates:
-        print(
-            "Warning: duplicate labels detected; sample IDs were made unique in VCF header.",
-            file=sys.stderr,
-        )
-
-    return sample_ids
-
 
 @contextlib.contextmanager
 def open_text_output(path):
-    """Open a text file for writing, using bgzip for .gz paths."""
+    """Open a text file for writing, using pysam.BGZFile for .gz paths."""
     if path.endswith(".gz"):
-        if shutil.which("bgzip") is None:
-            raise RuntimeError(
-                "bgzip not found on PATH. Install htslib (e.g. 'conda install -c bioconda htslib') "
-                "to produce bgzip-compressed VCF files compatible with pysam/tabix."
-            )
-        with open(path, "wb") as raw_out:
-            proc = subprocess.Popen(
-                ["bgzip", "-c"],
-                stdin=subprocess.PIPE,
-                stdout=raw_out,
-            )
-            text_wrapper = io.TextIOWrapper(proc.stdin, encoding="utf-8")
+        import pysam
+        with pysam.BGZFile(path, "wb") as raw:
+            text_wrapper = io.TextIOWrapper(raw, encoding="utf-8")
             try:
                 yield text_wrapper
             finally:
                 text_wrapper.flush()
-                proc.stdin.close()
-                proc.wait()
-                if proc.returncode != 0:
-                    raise RuntimeError(f"bgzip exited with code {proc.returncode}")
     else:
         with open(path, "w") as f:
             yield f
@@ -96,7 +51,7 @@ def convert_row_to_vcf_line(snp_index, line, expected_haploids, chrom, ref, alt)
     genotypes = stripped.split()
     if len(genotypes) != expected_haploids:
         raise ValueError(
-            f"Row {snp_index} has {len(genotypes)} columns but label file has {expected_haploids} labels"
+            f"Row {snp_index} has {len(genotypes)} columns but expected {expected_haploids}"
         )
 
     calls = []
@@ -110,8 +65,8 @@ def convert_row_to_vcf_line(snp_index, line, expected_haploids, chrom, ref, alt)
 
     fixed_fields = [
         str(chrom),
+        str(snp_index),
         f"snp{snp_index}",
-        ".",
         ref,
         alt,
         ".",
@@ -122,41 +77,29 @@ def convert_row_to_vcf_line(snp_index, line, expected_haploids, chrom, ref, alt)
     return "\t".join(fixed_fields + calls) + "\n"
 
 
-def _default_labels_out_path(out_file):
-    if out_file.endswith(".vcf.gz"):
-        return out_file[:-7] + ".labels.lab"
-    if out_file.endswith(".vcf"):
-        return out_file[:-4] + ".labels.lab"
-    return out_file + ".labels.lab"
-
-
 def convert_medeas_to_vcf(
     snps_file,
-    labels_file,
     out_file,
     chrom="1",
     ref="A",
     alt="T",
-    out_labels=None,
 ):
     if ref == alt:
         raise ValueError("REF and ALT alleles must be different")
 
-    labels = read_labels(labels_file)
-    expected_haploids = len(labels)
-    sample_ids = make_unique_sample_ids(labels)
+    with open(snps_file) as fin:
+        for first_line in fin:
+            if first_line.strip():
+                expected_haploids = len(first_line.strip().split())
+                break
+        else:
+            raise ValueError("SNP file is empty")
+
+    sample_ids = [f"ind_{i}" for i in range(1, expected_haploids + 1)]
 
     out_dir = os.path.dirname(out_file)
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
-
-    labels_out_path = out_labels if out_labels is not None else _default_labels_out_path(out_file)
-    labels_out_dir = os.path.dirname(labels_out_path)
-    if labels_out_dir:
-        os.makedirs(labels_out_dir, exist_ok=True)
-
-    with open(labels_out_path, "w") as flabel:
-        flabel.write("\n".join(sample_ids) + "\n")
 
     with open_text_output(out_file) as fout:
         fout.write("##fileformat=VCFv4.2\n")
@@ -180,35 +123,20 @@ def convert_medeas_to_vcf(
                 if vcf_line is not None:
                     fout.write(vcf_line)
 
-    return labels_out_path
-
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Convert MEDEAS SNP/labels files to a homozygous diploid VCF file (N -> N)"
+        description="Convert MEDEAS SNP file to a homozygous diploid VCF file (N -> N)"
     )
     parser.add_argument(
         "--snps",
-        required=True,
+        required=True, metavar="FILE",
         help="SNP file in MEDEAS format (one SNP per row, space-separated integers)",
     )
     parser.add_argument(
-        "--labels",
-        required=True,
-        help="Label file (one label per MEDEAS haploid column)",
-    )
-    parser.add_argument(
         "--out",
-        required=True,
-        help="Output VCF path (.vcf or .vcf.gz)",
-    )
-    parser.add_argument(
-        "--out-labels",
-        default=None,
-        help=(
-            "Output labels path to use with medeas --labels. "
-            "Default: <out without .vcf/.vcf.gz>.labels.lab"
-        ),
+        required=True, metavar="FILE",
+        help="Output VCF file (.vcf or .vcf.gz)",
     )
     parser.add_argument(
         "--chrom",
@@ -229,20 +157,15 @@ def main():
     args = parser.parse_args()
 
     try:
-        labels_out_path = convert_medeas_to_vcf(
+        convert_medeas_to_vcf(
             snps_file=args.snps,
-            labels_file=args.labels,
             out_file=args.out,
             chrom=args.chrom,
             ref=args.ref,
             alt=args.alt,
-            out_labels=args.out_labels,
         )
         print(f"Wrote VCF: {args.out}")
-        print(f"Wrote labels for medeas: {labels_out_path}")
-        print(
-            f"Run: medeas --vcf {args.out} --labels {labels_out_path} --out_dir <output_dir>"
-        )
+        print(f"Run: medeas --vcf {args.out} --out_dir <output_dir>")
     except Exception as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)

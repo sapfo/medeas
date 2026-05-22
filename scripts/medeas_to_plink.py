@@ -37,11 +37,11 @@ def read_labels(labels_file):
     return labels
 
 
-def write_tfam(labels, tfam_path):
+def write_tfam(labels, tfam_path, iids=None):
     with open(tfam_path, "w") as f:
         for sample_index, label in enumerate(labels, start=1):
             fid = label
-            iid = f"{label}_{sample_index}"
+            iid = iids[sample_index - 1] if iids is not None else f"{label}_{sample_index}"
             f.write(f"{fid} {iid} 0 0 0 -9\n")
 
 
@@ -124,7 +124,15 @@ def convert_medeas_to_plink(snps_file, labels_file, out_prefix, chrom, plink_pat
     if threads < 0:
         raise ValueError("threads must be >= 0 (0 means all cores)")
 
-    labels = read_labels(labels_file)
+    if labels_file is not None:
+        labels = read_labels(labels_file)
+        iids = None
+    else:
+        with open(snps_file) as f:
+            n = len(f.readline().split())
+        labels = ["pop1"] * n
+        iids = [f"ind_{i}" for i in range(1, n + 1)]
+
     expected_haploids = len(labels)
 
     with tempfile.TemporaryDirectory(prefix="medeas_to_plink_") as tmpdir:
@@ -132,7 +140,7 @@ def convert_medeas_to_plink(snps_file, labels_file, out_prefix, chrom, plink_pat
         tfam_path = tmp_prefix + ".tfam"
         tped_path = tmp_prefix + ".tped"
 
-        write_tfam(labels, tfam_path)
+        write_tfam(labels, tfam_path, iids=iids)
         write_tped_multithread(snps_file, tped_path, expected_haploids, chrom, threads)
 
         make_bed_from_tfile(tmp_prefix, out_prefix, plink_path, threads)
@@ -142,17 +150,19 @@ def main():
     parser = argparse.ArgumentParser(
         description="Convert haploid medeas files to homozygous diploid PLINK BED/BIM/FAM files (N -> N)"
     )
-    parser.add_argument("--snps", required=True,
+    parser.add_argument("--snps", required=True, metavar="FILE",
                         help="SNP file in MEDEAS format (one SNP per row, space-separated integers, one column per individual).")
-    parser.add_argument("--labels", required=True,
-                        help="Medeas label file (one haploid label per line)")
-    parser.add_argument("--out", required=True,
+    parser.add_argument("--labels", metavar="FILE",
+                        help="Medeas label file (one population per line). "
+                             "If omitted, all individuals are assigned to a single population 'pop1' "
+                             "and named consecutively (ind_1, ind_2, ...).")
+    parser.add_argument("--out", required=True, metavar="PREFIX",
                         help="Output PLINK prefix (writes .bed/.bim/.fam)")
     parser.add_argument("--chrom", default="1",
                         help="Chromosome code to use in TPED conversion (default: 1)")
-    parser.add_argument("--plink-path", default="plink",
+    parser.add_argument("--plink-path", default="plink", metavar="FILE",
                         help="Path to the PLINK executable (default: plink)")
-    parser.add_argument("-t", "--threads", type=int, default=1,
+    parser.add_argument("-t", "--threads", type=int, default=1, metavar="N",
                         help="Worker threads for conversion (0 = all cores)")
     args = parser.parse_args()
 

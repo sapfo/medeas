@@ -87,17 +87,17 @@ def main():
     parser = argparse.ArgumentParser(
         description="Convert a VCF/BCF file to PLINK BED/BIM/FAM files (2N -> 2N)"
     )
-    parser.add_argument("--vcf", required=True,
+    parser.add_argument("--vcf", required=True, metavar="FILE",
                         help="Input VCF or BCF file (plain or gzip-compressed)")
-    parser.add_argument("-o", "--out", required=True,
+    parser.add_argument("--out", required=True, metavar="PREFIX",
                         help="Output PLINK prefix (writes .bed/.bim/.fam)")
-    parser.add_argument("--labels", default=None,
+    parser.add_argument("--labels", default=None, metavar="FILE",
                         help="Optional labels file with one label per line; used to set FID in output .fam")
-    parser.add_argument("--plink-path", default="plink",
+    parser.add_argument("--plink-path", default="plink", metavar="EXEC",
                         help="Path to the PLINK executable (default: plink)")
     parser.add_argument("--no-allow-extra-chr", dest="allow_extra_chr", action="store_false", default=True,
                         help="Do not pass --allow-extra-chr to PLINK")
-    parser.add_argument("-t", "--threads", type=int, default=1,
+    parser.add_argument("-t", "--threads", type=int, default=1, metavar="N",
                         help="Worker threads for PLINK (0 = all cores)")
     args = parser.parse_args()
 

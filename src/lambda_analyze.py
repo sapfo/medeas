@@ -1,7 +1,5 @@
 import numpy as np
-from scipy.optimize import curve_fit
-from typing import Sequence, Tuple
-import matplotlib.pyplot as plt
+from typing import Tuple
 import pickle
 
 

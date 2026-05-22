@@ -23,6 +23,12 @@ dependencies = [
 
 [project.scripts]
 medeas = "main:main"
+medeas_to_plink = "scripts.medeas_to_plink:main"
+medeas_to_vcf = "scripts.medeas_to_vcf:main"
+plink_to_medeas = "scripts.plink_to_medeas:main"
+plink_to_vcf = "scripts.plink_to_vcf:main"
+vcf_to_medeas = "scripts.vcf_to_medeas:main"
+vcf_to_plink = "scripts.vcf_to_plink:main"
 
 [tool.setuptools]
 include-package-data = true
@@ -30,5 +36,5 @@ py-modules = ["main", "single_pass"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*"]
-exclude = ["test*", "script*"]
+include = ["src*", "scripts*"]
+exclude = ["test*"]

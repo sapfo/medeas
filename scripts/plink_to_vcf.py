@@ -17,37 +17,15 @@ import sys
 import tempfile
 
 
-def _read_labels(labels_file):
-    with open(labels_file) as f:
-        labels = [line.strip() for line in f if line.strip()]
-    if not labels:
-        raise ValueError("Labels file is empty")
-    return labels
-
-
-def _rewrite_vcf_header_samples(vcf_path, labels):
-    tmp_path = vcf_path + ".tmp"
-    replaced = False
-
-    with open(vcf_path, "r") as fin, open(tmp_path, "w") as fout:
+def _write_labels(fam_file, out_labels):
+    labels_dir = os.path.dirname(out_labels)
+    if labels_dir:
+        os.makedirs(labels_dir, exist_ok=True)
+    with open(fam_file) as fin, open(out_labels, "w") as fout:
         for line in fin:
-            if line.startswith("#CHROM\t"):
-                parts = line.rstrip("\n").split("\t")
-                sample_names = parts[9:]
-                if len(labels) != len(sample_names):
-                    raise ValueError(
-                        f"Labels file has {len(labels)} entries but VCF has {len(sample_names)} samples"
-                    )
-                fout.write("\t".join(parts[:9] + labels) + "\n")
-                replaced = True
-            else:
-                fout.write(line)
-
-    if not replaced:
-        os.remove(tmp_path)
-        raise RuntimeError("VCF header line (#CHROM) not found")
-
-    os.replace(tmp_path, vcf_path)
+            parts = line.strip().split()
+            if parts:
+                fout.write(parts[0] + "\n")
 
 
 def _bgzip_copy(src_path, dst_path):
@@ -71,7 +49,7 @@ def _bgzip_copy(src_path, dst_path):
 def convert_plink_to_vcf(
     bfile_prefix,
     out_vcf,
-    labels_file=None,
+    out_labels=None,
     plink_path="plink",
     allow_extra_chr=True,
     threads=1,
@@ -85,8 +63,6 @@ def convert_plink_to_vcf(
         if not os.path.isfile(path):
             raise FileNotFoundError(f"PLINK file not found: {path}")
 
-    if labels_file is not None and not os.path.isfile(labels_file):
-        raise FileNotFoundError(f"Labels file not found: {labels_file}")
 
     if shutil.which(plink_path) is None:
         raise FileNotFoundError(f"PLINK executable not found: {plink_path}")
@@ -144,13 +120,13 @@ def convert_plink_to_vcf(
         if not os.path.isfile(tmp_vcf):
             raise RuntimeError("Expected VCF output was not created by PLINK")
 
-        if labels_file is not None:
-            _rewrite_vcf_header_samples(tmp_vcf, _read_labels(labels_file))
-
         if out_vcf.endswith(".vcf"):
             shutil.move(tmp_vcf, out_vcf)
         else:
             _bgzip_copy(tmp_vcf, out_vcf)
+
+    if out_labels is not None:
+        _write_labels(fam, out_labels)
 
 
 
@@ -158,19 +134,19 @@ def main():
     parser = argparse.ArgumentParser(
         description="Convert PLINK BED/BIM/FAM files to VCF (.vcf or .vcf.gz)"
     )
-    parser.add_argument("--bfile", required=True,
+    parser.add_argument("--bfile", required=True,  metavar="PREFIX",
                         help="PLINK file prefix (without .bed/.bim/.fam)")
-    parser.add_argument("--out", required=True,
+    parser.add_argument("--out", required=True, metavar="FILE",
                         help="Output VCF path (.vcf or .vcf.gz)")
-    parser.add_argument("--labels", default=None,
-                        help="Optional labels file with one label per line; when provided, these labels replace the VCF sample names")
-    parser.add_argument("--plink-path", default="plink",
+    parser.add_argument("--out-labels", default=None, metavar="FILE",
+                        help="Output labels file; if given, population labels from the .fam file (first column) are written to this file")
+    parser.add_argument("--plink-path", default="plink", metavar="EXEC",
                         help="Path to the PLINK executable (default: plink)")
     parser.add_argument("--no-allow-extra-chr", dest="allow_extra_chr", action="store_false", default=True,
                         help="Do not pass --allow-extra-chr to PLINK")
     parser.add_argument("--fid-iid", dest="iid_only", action="store_false", default=True,
                         help="Keep default PLINK sample naming (FID+IID) instead of IID-only")
-    parser.add_argument("-t", "--threads", type=int, default=1,
+    parser.add_argument("-t", "--threads", type=int, default=1, metavar="N",
                         help="Worker threads for PLINK (0 = all cores)")
     args = parser.parse_args()
 
@@ -178,7 +154,7 @@ def main():
         convert_plink_to_vcf(
             bfile_prefix=args.bfile,
             out_vcf=args.out,
-            labels_file=args.labels,
+            out_labels=args.out_labels,
             plink_path=args.plink_path,
             allow_extra_chr=args.allow_extra_chr,
             threads=args.threads,

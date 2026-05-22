@@ -47,10 +47,6 @@ def convert_plink_to_medeas(bfile_prefix, snp_file, labels_file, threads=1):
     if snp_dir:
         os.makedirs(snp_dir, exist_ok=True)
 
-    labels_dir = os.path.dirname(labels_file)
-    if labels_dir:
-        os.makedirs(labels_dir, exist_ok=True)
-
     for path in (fam_file, bim_file, bed_file):
         if not os.path.isfile(path):
             raise FileNotFoundError(f"PLINK file not found: {path}")
@@ -132,10 +128,16 @@ def convert_plink_to_medeas(bfile_prefix, snp_file, labels_file, threads=1):
                     if snp_done % 20000 == 0 or snp_done == n_snps:
                         print(f"Converted {snp_done}/{n_snps} SNPs")
 
-    print(f"Writing: {labels_file}")
-    with open(labels_file, "w") as f:
-        for fid in family_ids:
-            f.write(fid + "\n")
+
+    if labels_file is not None:
+        print(f"Writing: {labels_file}")
+        labels_dir = os.path.dirname(labels_file)
+        if labels_dir:
+            os.makedirs(labels_dir, exist_ok=True)
+
+        with open(labels_file, "w") as f:
+            for fid in family_ids:
+                f.write(fid + "\n")
 
     print("PLINK conversion complete.")
 
@@ -144,17 +146,17 @@ def main():
     parser = argparse.ArgumentParser(
         description="Convert diploid PLINK .bed/.bim/.fam files to pseudo-haploid medeas SNP/labels files (N -> N)"
     )
-    parser.add_argument("--bfile", required=True,
+    parser.add_argument("--bfile", required=True, metavar="PREFIX",
                         help="PLINK file prefix (without .bed/.bim/.fam)")
-    parser.add_argument("--snp_out", required=True,
+    parser.add_argument("--out", required=True, metavar="FILE",
                         help="Output SNP matrix file (medeas format)")
-    parser.add_argument("--labels_out", required=True,
-                        help="Output labels file (medeas format)")
-    parser.add_argument("-t", "--threads", type=int, default=1,
+    parser.add_argument("--out_labels", default=None, metavar="FILE",
+                        help="Output labels file; if given, population labels from the .fam file (first column) are written to this file")
+    parser.add_argument("-t", "--threads", type=int, default=1, metavar="N",
                         help="Number of worker threads for chunk conversion (0 = all cores)")
     args = parser.parse_args()
 
-    convert_plink_to_medeas(args.bfile, args.snp_out, args.labels_out, threads=args.threads)
+    convert_plink_to_medeas(args.bfile, args.out, args.out_labels, threads=args.threads)
 
 
 if __name__ == "__main__":

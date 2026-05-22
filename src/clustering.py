@@ -1,7 +1,4 @@
 import numpy as np
-import os
-from sklearn.cluster import AgglomerativeClustering as AC
-import matplotlib.pyplot as plt
 import pickle
 
 from skbio import DistanceMatrix
@@ -37,23 +34,6 @@ def get_mds_coordinate(simulation, p):
     coordinates = np.array(coordinates)
     coordinates = coordinates.T
     return(coordinates)
-
-def perform_clustering(npop: int,
-                       coordinates,
-                       simulation
-                       ) -> Tuple['np.ndarray[int]', 'np.ndarray[float]',
-                                  'np.ndarray[float]']:
-    """Perform agglomerative clustering for simulation
-    Return found labels, distances from large eigenvalues,
-    eigenvalues read from file, and labels read from file.
-    """
-
-    if simulation.output_level >= 1:
-        print('clustering will be performed on a ' + str(coordinates.shape) + ' matrix')
-
-    clusterer = AC(n_clusters=npop, compute_full_tree=True,linkage="ward")
-    lab_infered = clusterer.fit_predict(coordinates)
-    return lab_infered
 
 def build_distance_subblock(npop, labels, delta):
     blocks = np.zeros((npop, npop), dtype='object')
@@ -101,7 +81,7 @@ def find_tree(npop: int,
 
 def set_tree_from_input(asd_file, simulation) -> Tuple[TreeNode, 'np.ndarray[int]', 'np.ndarray[float]']:
     """Using the given tree topology, Return the neighbor join tree, population sizes,
-    and the bloks of original distance matrix that correspond to given
+    and the blocks of original distance matrix that correspond to given
     population pairs (for further determination of fitting window).
     """
     print(simulation.topology)

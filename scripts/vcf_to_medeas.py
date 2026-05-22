@@ -1,114 +1,120 @@
 #!/usr/bin/env python3
-"""Convert a VCF/BCF file to the medeas pseudo-haploid format.
+"""Convert a VCF/BCF file to the medeas pseudo-haploid SNP matrix format.
 
-Workflow:
-  1. PLINK converts VCF -> BED (in a temporary directory).
-  2. Each diploid individual is converted to one pseudo-haploid column;
-     heterozygous sites are randomly sampled as 1 or 2.
-  3. Population labels are written once per individual.
+Each diploid sample is reduced to one pseudo-haploid column:
+  --vcf         always pseudo-haploidize by random allele selection
+  --vcf_phased1 phased → haplotype 1, unphased → random
+  --vcf_phased2 phased → haplotype 2, unphased → random
 
-Population labels are taken from the FAM file produced by PLINK (= VCF sample
-IDs) unless --labels is supplied, in which case that file is used verbatim.
+Output: one SNP per row, space-separated integers (0=missing, 1=ref, 2=alt).
 """
 
 import argparse
-import os
-import subprocess
 import sys
-import tempfile
-
-# Allow ``from plink_to_medeas import ...`` when running as a script.
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from plink_to_medeas import convert_plink_to_medeas  # noqa: E402
+import numpy as np
 
 
-def convert_vcf_to_medeas(
-    vcf_file,
-    snp_file,
-    labels_file,
-    labels_input=None,
-    plink_path="plink",
-    allow_extra_chr=True,
-    threads=1,
-):
-    """Convert vcf_file to the medeas pseudo-haploid format.
+def _convert_vcf(vcf_file: str, mode: str, out_file: str) -> None:
+    try:
+        import pysam
+    except ImportError as exc:
+        raise ImportError(
+            "pysam is required. Install it with 'pip install pysam'."
+        ) from exc
 
-    if not os.path.isfile(vcf_file):
-        raise FileNotFoundError(f"VCF file not found: {vcf_file}")
+    rng = np.random.default_rng()
+    vf = pysam.VariantFile(vcf_file)
+    n_samples = len(vf.header.samples)
+    if n_samples == 0:
+        vf.close()
+        sys.exit(f"Error: no sample columns found in {vcf_file}")
 
-    if labels_input is not None and not os.path.isfile(labels_input):
-        raise FileNotFoundError(f"Labels file not found: {labels_input}")
+    print(f"Converting {vcf_file} ({n_samples} samples, mode={mode}) -> {out_file}")
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        bfile = os.path.join(tmpdir, "tmp")
+    if mode == "vcf_random":
+        def _pick_heterozygote(gt, sample, idx, rp):
+            if rp[0] is None:
+                rp[0] = rng.integers(0, 2, size=n_samples, dtype=np.int8)
+            return gt[int(rp[0][idx])]
+    elif mode == "vcf_phased1":
+        def _pick_heterozygote(gt, sample, idx, rp):
+            if sample.phased:
+                return gt[0] ## haploid 1
+            if rp[0] is None:
+                rp[0] = rng.integers(0, 2, size=n_samples, dtype=np.int8)
+            return gt[int(rp[0][idx])]
+    elif mode == "vcf_phased2":
+        def _pick_heterozygote(gt, sample, idx, rp):
+            if sample.phased:
+                return gt[1] ## haploid 2
+            if rp[0] is None:
+                rp[0] = rng.integers(0, 2, size=n_samples, dtype=np.int8)
+            return gt[int(rp[0][idx])]
 
-        # ── Step 1: VCF → BED ──────────────────────────────────────────────
-        cmd = [plink_path, "--vcf", vcf_file, "--make-bed", "--out", bfile]
-        if allow_extra_chr:
-            cmd.append("--allow-extra-chr")
-        cmd += ["--threads", str(max(1, threads if threads != 0 else (os.cpu_count() or 1)))]
+    n_written = 0
+    with open(out_file, "w") as fout:
+        for rec in vf:
+            row = np.zeros(n_samples, dtype=np.int8)
+            rp = [None]
+            for idx, sample in enumerate(rec.samples.values()):
+                gt = sample.get("GT")
+                if gt is None or len(gt) == 0:
+                    allele = None
+                elif len(gt) == 1:
+                    allele = gt[0]
+                else:
+                    allele = _pick_heterozygote(gt, sample, idx, rp)
 
-        print("Running PLINK: " + " ".join(cmd))
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            sys.stderr.write(result.stderr)
-            raise RuntimeError("PLINK VCF→BED conversion failed (see output above)")
+                if allele is None:
+                    row[idx] = 0
+                elif allele == 0:
+                    row[idx] = 1
+                else:
+                    row[idx] = 2
 
-        # ── Step 2: BED → medeas (SNP matrix + labels from FAM) ───────────
-        convert_plink_to_medeas(bfile, snp_file, labels_file, threads=threads)
+            fout.write(" ".join(map(str, row)) + "\n")
+            n_written += 1
+            if n_written % 10000 == 0:
+                print(f"  {n_written} SNPs written...")
 
-        # ── Step 3 (optional): override labels with user-supplied file ─────
-        if labels_input is not None:
-            with open(labels_input) as f:
-                diploid_labels = [ln.strip() for ln in f if ln.strip()]
-
-            fam_path = bfile + ".fam"
-            with open(fam_path) as f:
-                n_samples = sum(1 for ln in f if ln.strip())
-
-            if len(diploid_labels) != n_samples:
-                raise ValueError(
-                    f"--labels file has {len(diploid_labels)} entries but VCF "
-                    f"contains {n_samples} samples"
-                )
-
-            with open(labels_file, "w") as f:
-                for lbl in diploid_labels:
-                    f.write(lbl + "\n")
-
-    print("VCF conversion complete.")
+    vf.close()
+    print(f"Done: {n_written} SNPs written.")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description=("Convert a VCF/BCF file to pseudo-haploid medeas SNP/labels files. ")
+        description="Convert a VCF/BCF file to pseudo-haploid medeas SNP matrix."
     )
-    parser.add_argument("--vcf", required=True,
-                        help="Input VCF or BCF file (plain or gzip-compressed).")
-    parser.add_argument("--snp-out", required=True,
+
+    input_group = parser.add_argument_group("Input source (required, choose exactly one)")
+    input_source = input_group.add_mutually_exclusive_group(required=True)
+
+    input_source.add_argument("--vcf", metavar="FILE",
+                              help="VCF/BCF input. Random pseudo-haploidize.",
+                              type=str, default=None)
+    input_source.add_argument("--vcf-phased1", metavar="FILE",
+                              help="VCF/BCF input. If phased, use haplotype 1; else random.",
+                              type=str, default=None)
+    input_source.add_argument("--vcf-phased2", metavar="FILE",
+                              help="VCF/BCF input. If phased, use haplotype 2; else random.",
+                              type=str, default=None)
+
+    parser.add_argument("--out", required=True, metavar="FILE",
                         help="Output SNP matrix file (medeas format).")
-    parser.add_argument("--labels", metavar="FILE", default=None,
-                        help="Optional input labels file with one population label per diploid individual (same order as VCF samples).  When omitted, VCF sample IDs are used.")
-    parser.add_argument("--labels-out", required=True, metavar="FILE",
-                        help="Output labels file (one label per pseudo-haploid individual).")
-    parser.add_argument("--plink-path", default="plink", metavar="PATH",
-                        help="Path to the PLINK 1.9 executable (default: plink).")
-    parser.add_argument("--no-allow-extra-chr", dest="allow_extra_chr", action="store_false", default=True,
-                        help="Do not pass --allow-extra-chr to PLINK.")
-    parser.add_argument("-t", "--threads", type=int, default=1,
-                        help="Worker threads for SNP conversion (0 = all cores, default: 1).")
 
     args = parser.parse_args()
 
-    convert_vcf_to_medeas(
-        vcf_file=args.vcf,
-        snp_file=args.snp_out,
-        labels_file=args.labels_out,
-        labels_input=args.labels,
-        plink_path=args.plink_path,
-        allow_extra_chr=args.allow_extra_chr,
-        threads=args.threads,
-    )
+    if args.vcf is not None:
+        vcf_file = args.vcf
+        mode = "vcf_random"
+    elif args.vcf_phased1 is not None:
+        vcf_file = args.vcf_phased1
+        mode = "vcf_phased1"
+    else:
+        vcf_file = args.vcf_phased2
+        mode = "vcf_phased2"
+
+    _convert_vcf(vcf_file, mode, args.out)
 
 
 if __name__ == "__main__":
