@@ -32,7 +32,7 @@ vcf_to_plink = "scripts.vcf_to_plink:main"
 
 [tool.setuptools]
 include-package-data = true
-py-modules = ["main", "single_pass"]
+py-modules = ["main"]
 
 [tool.setuptools.packages.find]
 where = ["."]

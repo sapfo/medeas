@@ -19,7 +19,7 @@ from src.make_asd import compute_asd_matrix
 from src.make_asd import compute_asd_matrix_plink
 from src.mds import calc_mds
 
-from single_pass import run_once
+from src.single_pass import run_once
 from src.clustering import find_tree, get_mds_coordinate, set_tree_from_input, build_population_dimension
 import sys
 from src.extrapolate_split_time import extrapolate_split_time

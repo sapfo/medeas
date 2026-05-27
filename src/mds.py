@@ -8,7 +8,6 @@ def calc_mds(file: str, outfile: str, title = 'MDS') -> None:
     and store it into 'outfile'.
     """
 
-    #print(f"Calculating {title} for distance matrix: {file}")
     if file.endswith("mdist.gz") or file.endswith(".mdist"):
         delta = np.loadtxt(file)
     else:

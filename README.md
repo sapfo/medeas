@@ -82,7 +82,7 @@ medeas --snps <genotypes_file> [--labels <labels_file>] --out-dir <output_folder
 | `--plink-path FILE` | 'plink' | Path to PLINK 1.9 executable. |
 | `--detailed-output` | off | Generate additional diagnostic plots (distance matrix, eigenvalue histogram, SFS). |
 
-A full list of parameters is available via `python main.py --help`.
+A full list of parameters is available via `medeas --help`.
 
 ### Example
 
