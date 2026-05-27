@@ -68,8 +68,8 @@ medeas --snps <genotypes_file> [--labels <labels_file>] --out-dir <output_folder
 | `--labels FILE` | — | Population label file: one label per individual, one per line, matching column order of the genotype file. Required for split-time estimation. |
 | `--out-dir DIR` | '.' | Output folder (created if absent). |
 | `--no-split` | off | Skip tree and split-time estimation; produce only distance, MDS, and PCA outputs. Implied when no labels are provided. |
-| `-bws N` | 100 | SNPs per bootstrap window. Recommendation: ~1% of total SNPs. |
-| `-bsn N` | 100 | Number of bootstrap replicates (0 = single run with all SNPs). |
+| `-bws N` | 100 | The number of SNPs to include in a bootstrapping window. Notice that the largest this number is, the faster it is, but if it’s too big, the bootstrapping intervals become less reliable. Our recommendation is to use about 1% of the SNPs. |
+| `-bsn N` | 100 | the number of bootstrapping to perform. We recommend either to use 0 (i.e. just do one calculation with all the SNP) or 100 to have a straight way to get a 95% interval |
 | `--topology NEWICK` | — | Fix the tree topology (Newick, population indices in label order). |
 | `--skip-calculate-matrix` | off | Reuse previously computed distance matrices (skips genotype file reading). |
 | `--threads N` | 0 | Worker threads (0 = all available cores). |
@@ -106,17 +106,17 @@ medeas --snps test/snp.dat --labels test/pop_label.dat --out-dir results/  --no-
 |---------------|-------------|
 | `mds_plot/` | MDS scatter plots |
 | `pca_plot/` | PCA scatter plots |
-| `MDS_coordinate.txt` | MDS coordinates (one row per individual) |
-| `PCA_coordinate.txt` | PCA coordinates (one row per individual) |
-| `eigenvalues.pdf` | Eigenvalue scree plot |
-| `SFS.pdf` / `SFS.txt` | Folded site-frequency spectrum |
-| `tree.txt` | Inferred population tree *(requires labels)* |
-| `split_time.txt` | Split times per node, all bootstrap replicates *(requires labels)* |
-| `effective_size.txt` | Effective sizes after split, all bootstrap replicates *(requires labels)* |
-| `between_population_coalescence_time.txt` | Between-population coalescence times *(requires labels)* |
-| `within_population_coalescence_time.txt` | Within-population coalescence times *(requires labels)* |
-| `split_bootstraped_confidence_interval.txt` | 95% CI for split times *(requires labels)* |
-| `population_bootstraped_confidence_interval.txt` | 95% CI for within-pop coalescence and effective sizes *(requires labels)* |
+| `MDS_coordinate.txt` | MDS coordinates (one row per individual). If the user wants to redo the plot with a different layout. |
+| `PCA_coordinate.txt` | PCA coordinates (one row per individual). If the user wants to redo the plot with a different layout. |
+| `eigenvalues.pdf` | Eigenvalues plot |
+| `SFS.pdf` / `SFS.txt` | File showing the folded SFS of the entire panel. |
+| `tree.txt` | File showing the inferred tree. |
+| `split_time.txt` | File giving the split time for each split (all bootstrap value) |
+| `effective_size.txt` | File giving the effective size of each population after splitting for the main branch (all bootstrap value) |
+| `between_population_coalescence_time.txt` | File giving the coalescence time between each groups of population (all bootstrap values) |
+| `within_population_coalescence_time.txt` | File giving the coalescence time within population. Notice that by definition (see publication) the coalescence time in the first population is 1 (all bootstrap value) |
+| `split_bootstraped_confidence_interval.txt` | File giving the confidence interval for the between population coalescence time as well as the split time |
+| `population_bootstraped_confidence_interval.txt` | File giving the confidence interval for the within population coalescence time as well as the effective size after splitting from the main branch. |
 | `asd_matrices/` | Cached distance matrices (reused with `--skip-calculate-matrix`) |
 | `MDS_eigensystem/` | Cached MDS eigensystems |
 
