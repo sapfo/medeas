@@ -286,7 +286,7 @@ def ibs_distance_plink(bfile: str, dist_out: str, plink_path: str,
         plink_path,
         "--bfile", bfile,
         "--allow-no-sex",
-        "--distance", "gz", "1-ibs", "square",
+        "--distance", "gz", "1-ibs", "square", "flat-missing",
         "--threads", str(threads),
         "--out", prefix,
     ]
